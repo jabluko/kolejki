@@ -10,7 +10,7 @@ namespace plib
 
     #define UNIQUE_NAME(base) CONCAT(CONCAT(CONCAT(______, base), __LINE__), _____)
 
-    consteval void nothing() noexcept
+    constexpr void nothing() noexcept
     { }
 
     template<typename T>
