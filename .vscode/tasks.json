@@ -20,7 +20,7 @@
                 " -fsanitize=undefined " ,
                 " -fno-sanitize-recover " ,
                 " -fsanitize=address " ,
-                " -ggdb " ,
+                " -ggdb3 " ,
                 " -fno-omit-frame-pointer " ,
                 " -DLOCAL " ,
                 " -O0 ",
