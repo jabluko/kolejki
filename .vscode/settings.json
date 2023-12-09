@@ -1,10 +1,10 @@
 {
+  "C_Cpp_Runner.msvcBatchPath": "",
   "C_Cpp_Runner.cCompilerPath": "gcc",
   "C_Cpp_Runner.cppCompilerPath": "g++",
   "C_Cpp_Runner.debuggerPath": "gdb",
   "C_Cpp_Runner.cStandard": "",
   "C_Cpp_Runner.cppStandard": "",
-  "C_Cpp_Runner.msvcBatchPath": "",
   "C_Cpp_Runner.useMsvc": false,
   "C_Cpp_Runner.warnings": [
     "-Wall",
@@ -57,16 +57,19 @@
   "C_Cpp_Runner.useLinkTimeOptimization": false,
   "C_Cpp_Runner.msvcSecureNoWarnings": false,
   "files.associations": {
-    "forward_list": "cpp",
-    "array": "cpp",
+    "*.tcc": "cpp",
     "deque": "cpp",
     "string": "cpp",
     "unordered_map": "cpp",
     "vector": "cpp",
+    "array": "cpp",
+    "forward_list": "cpp",
     "string_view": "cpp",
     "initializer_list": "cpp",
-    "*.tcc": "cpp",
-    "atomic": "cpp",
-    "iterator": "cpp"
+    "system_error": "cpp",
+    "functional": "cpp",
+    "tuple": "cpp",
+    "type_traits": "cpp",
+    "utility": "cpp"
   }
 }
