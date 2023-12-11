@@ -11,11 +11,7 @@
 // niestojących w żadnej kolejce, a nawet po wywołaniu "zamkniecie_urzedu"
 
 // Należy wypełnić
-struct interesant {
-    // Twój kod zaczyna się tu
-
-    // A kończy tu
-};
+struct interesant;
 
 /**
  * @brief Inicjuje bibliotekę
