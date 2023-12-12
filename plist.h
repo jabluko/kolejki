@@ -8,7 +8,7 @@
 
 namespace plib
 {
-	template<class value_type, class allocator_type = std::allocator<value_type>>
+	template<class value_type>
 	class list
 	{
 		struct node;
@@ -18,10 +18,10 @@ namespace plib
 		using diffrence_type = std::ptrdiff_t;
 
 		using reference = value_type&;
-		using const_reference = const reference;
+		using const_reference = const value_type&;
 
-		using pointer = std::allocator_traits<allocator_type>::pointer;
-		using const_pointer = std::allocator_traits<allocator_type>::const_pointer;
+		using pointer = value_type*;
+		using const_pointer = const value_type*;
 		
 		class iterator;
 		class const_iterator;
@@ -29,16 +29,13 @@ namespace plib
 		using reverse_iterator = std::reverse_iterator<iterator>;
 		using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
-		allocator_type allocator;
-
-		node* _before_first;
-		node* _past_last;
+		iterator _before_first;
+		iterator _past_last;
 		size_type _size;
 
 		list();
 
-		template<typename otherallocator_type>
-		list(const list<value_type, otherallocator_type>&);
+		list(const list<value_type>&);
 
 		template<typename inputIt>
 		list(const inputIt&, const inputIt&);
@@ -50,6 +47,7 @@ namespace plib
 		list& operator=(list&&);
 
 		size_t size() const;
+		bool empty() const;
 
 		iterator begin();
 		const_iterator begin() const;
@@ -75,7 +73,7 @@ namespace plib
 		iterator insert(const const_iterator& pos, _InputIterator first, const _InputIterator& second);
 
 		iterator insert(const const_iterator& pos, list&& value);
-		iterator erase(const const_iterator& pos);
+		iterator erase(const iterator& pos);
 
 		iterator push_back(const value_type& value);
 		iterator push_front(const value_type& value);
@@ -88,6 +86,8 @@ namespace plib
 			
 		void reverse();
 
+		~list();
+
 private:
 		struct node
 		{
@@ -96,23 +96,33 @@ private:
 			friend class iterator;
 		public:
 			value_type _value;
-			node* _next[2];
+			std::array<node*, 2> _next;
 		};
 		template<typename ...Args>
-		node* make_node(node *const previous = nullptr, node *const next = nullptr, Args&&... args); 
+		node* make_node(node *const previous = nullptr, node *const next = nullptr, Args&&... args);
+		void destroy_node(node* to_delete);
 
 public:
-		class iterator: public std::iterator<std::bidirectional_iterator_tag, value_type>
+		class iterator
 		{
 		protected:
 			friend class list;
-			node* _previous;
 			node* _current;
+			bool _direction;
+			const iterator& operator<=>(const iterator&) const;
 		public:
+			using iterator_tag = std::bidirectional_iterator_tag;
+
+			using reference = value_type&;
+			using const_reference = const value_type&;
+
+			using pointer = value_type*;
+			using const_pointer = const value_type*;
+
 			iterator() = default;
 			iterator(const iterator&) = default;
 			iterator(iterator&&) = default;
-			iterator(node *const, node *const);
+			iterator(node *const, bool);
 				
 			iterator& operator=(const iterator&) = default;
 			iterator& operator=(iterator&&) = default;
@@ -133,19 +143,29 @@ public:
 			~iterator() = default;
 		};
 
-		class const_iterator: public std::iterator<std::bidirectional_iterator_tag, const value_type>
+		class const_iterator
 		{
 		protected:
 			friend class list;
-			const_iterator operator<=>(const const_iterator&) const;
-			node* _previous;
+			const const_iterator& operator<=>(const const_iterator&) const;
 			node* _current;
+			bool _direction;
 		public:
+			using iterator_tag = std::bidirectional_iterator_tag;
+
+			//using value_type = const value_type;
+
+			using reference = value_type&;
+			using const_reference = const value_type&;
+
+			using pointer = value_type*;
+			using const_pointer = const value_type*;
+
 			const_iterator() = default;
 			const_iterator(const const_iterator&) = default;
 			const_iterator(const_iterator&&) = default;
 			const_iterator(const iterator&);
-			const_iterator(node *const, node *const);
+			const_iterator(node *const, bool);
 
 			const_iterator& operator=(const const_iterator&) = default;
 			const_iterator& operator=(const_iterator&&) = default;
@@ -167,257 +187,274 @@ public:
 		};
 	};
 
-    template <class value_type, class allocator_type>
-    inline list<value_type, allocator_type>::const_iterator list<value_type, allocator_type>::const_iterator::operator<=>(const const_iterator &next) const
+    template <class value_type>
+    inline const typename list<value_type>::iterator& list<value_type>::iterator::operator<=>(const iterator &next) const
     {
 		if(_current)
-		{	
-			if(_current->_next[0] != _previous)
-				_current->_next[0] = next._current;
-			else
-				_current->_next[1] = next._current;
-		}
+			_current->_next[_direction] = next._current;
 
 		if(next._current)
-		{
-			if(next._current->_next[0] == next._previous)
-				next._current->_next[0] = _current;
-			else
-				next._current->_next[1] = _current;
-		}
-		return {_current, next._current};
+			next._current->_next[!next._direction] = this->_current;
+		return next;
     }
 
-    template <class value_type, class allocator_type>
-    inline list<value_type, allocator_type>::iterator::iterator(node *const previous, node *const current)
-		: _previous{previous}, _current{current}
+    template <class value_type>
+    inline list<value_type>::iterator::iterator(node *const current, bool direction)
+		: _current{current}, _direction{direction}
     { }
 
-    template <class value_type, class allocator_type>
-    inline typename list<value_type, allocator_type>::iterator list<value_type, allocator_type>::iterator::get_next() const
-    { return {_current, (_previous != _current->_next[0]) ? (_current->_next[0]) : (_current->_next[1])}; }
+    template <class value_type>
+    inline typename list<value_type>::iterator list<value_type>::iterator::get_next() const
+    { return { _current->_next[_direction], (_current == _current->_next[_direction]->_next[0]) }; }
 
-    template <class value_type, class allocator_type>
-    inline typename list<value_type, allocator_type>::iterator list<value_type, allocator_type>::iterator::get_previous() const
-    { return {(_current != _previous->_next[0]) ? (_previous->_next[0]) : (_previous->_next[1]), _previous}; }
+    template <class value_type>
+    inline typename list<value_type>::iterator list<value_type>::iterator::get_previous() const
+    { return { _current->_next[!_direction], (_current == _current->_next[!_direction]->_next[1]) }; }
 
-    template <class value_type, class allocator_type>
-    inline typename list<value_type, allocator_type>::iterator &list<value_type, allocator_type>::iterator::operator++()
+    template <class value_type>
+    inline typename list<value_type>::iterator &list<value_type>::iterator::operator++()
     { return (*this) = this->get_next(); }
 
-	template<class value_type, class allocator_type>
-	inline typename list<value_type, allocator_type>::iterator list<value_type, allocator_type>::iterator::operator++(int)
+	template<class value_type>
+	inline typename list<value_type>::iterator list<value_type>::iterator::operator++(int)
 	{
 		auto copy = *this;
 		++(*this);
 		return copy;
 	}
 	
-	template<class value_type, class allocator_type>
-	inline typename list<value_type, allocator_type>::iterator& list<value_type, allocator_type>::iterator::operator--()
+	template<class value_type>
+	inline typename list<value_type>::iterator& list<value_type>::iterator::operator--()
 	{ return (*this) = this->get_previous(); }
 
-	template<class value_type, class allocator_type>
-	inline typename list<value_type, allocator_type>::iterator list<value_type, allocator_type>::iterator::operator--(int)
+	template<class value_type>
+	inline typename list<value_type>::iterator list<value_type>::iterator::operator--(int)
 	{
 		auto copy = *this;
 		++(*this);
 		return copy;
 	}
 
-	template<class value_type, class allocator_type>
-	inline typename list<value_type, allocator_type>::reference list<value_type, allocator_type>::iterator::operator*() const
+	template<class value_type>
+	inline typename list<value_type>::iterator::reference list<value_type>::iterator::operator*() const
 	{ return this->_current->_value; }
 
-	template<class value_type, class allocator_type>
-	inline typename list<value_type, allocator_type>::pointer list<value_type, allocator_type>::iterator::operator->() const
+	template<class value_type>
+	inline typename list<value_type>::iterator::pointer list<value_type>::iterator::operator->() const
 	{ return &_current->_value; }
 
-    template <class value_type, class allocator_type>
-    inline bool list<value_type, allocator_type>::iterator::operator==(const typename list<value_type, allocator_type>::iterator& other) const
+    template <class value_type>
+    inline bool list<value_type>::iterator::operator==(const typename list<value_type>::iterator& other) const
     { return _current == other._current; }
 
-    template <class value_type, class allocator_type>
-    inline bool list<value_type, allocator_type>::iterator::operator!=(const typename list<value_type, allocator_type>::iterator& other) const
+    template <class value_type>
+    inline bool list<value_type>::iterator::operator!=(const typename list<value_type>::iterator& other) const
     { return _current != other._current; }
 
-    template <class value_type, class allocator_type>
-    inline list<value_type, allocator_type>::const_iterator::const_iterator(const iterator& other)
-		:_previous{other._previous}, _current{other._current}
+    template <class value_type>
+    inline list<value_type>::const_iterator::const_iterator(const iterator& other)
+		:_current{other._current}, _direction{other._direction}
     {
     }
 
-    template <class value_type, class allocator_type>
-    inline list<value_type, allocator_type>::const_iterator::const_iterator(node *const previous, node *const current)
-        : _previous{previous}, _current{current}
+    template <class value_type>
+    inline list<value_type>::const_iterator::const_iterator(node *const current, bool direction)
+        : _current{current}, _direction{direction}
     { }
 
-    template <class value_type, class allocator_type>
-    inline typename list<value_type, allocator_type>::const_iterator list<value_type, allocator_type>::const_iterator::get_next() const
-    { return {_current, (_previous != _current->_next[0]) ? (_current->_next[0]) : (_current->_next[1])}; }
+	template <class value_type>
+    inline const typename list<value_type>::const_iterator& list<value_type>::const_iterator::operator<=>(const const_iterator &next) const
+    {
+		if(_current)
+			_current->_next[_direction] = next._current;
 
-    template <class value_type, class allocator_type>
-    inline typename list<value_type, allocator_type>::const_iterator list<value_type, allocator_type>::const_iterator::get_previous() const
-    { return {(_current != _previous->_next[0]) ? (_previous->_next[0]) : (_previous->_next[1]), _previous}; }
+		if(next._current)
+			next._current->_next[!next._direction] = this->_current;
+		return next;
+    }
 
-    template <class value_type, class allocator_type>
-    inline typename list<value_type, allocator_type>::const_iterator& list<value_type, allocator_type>::const_iterator::operator++()
+    template <class value_type>
+    inline typename list<value_type>::const_iterator list<value_type>::const_iterator::get_next() const
+    { return { _current->_next[_direction], (_current == _current->_next[_direction]->_next[0]) }; }
+
+    template <class value_type>
+    inline typename list<value_type>::const_iterator list<value_type>::const_iterator::get_previous() const
+    { return { _current->_next[!_direction], (_current == _current->_next[!_direction]->_next[1]) }; }
+
+    template <class value_type>
+    inline typename list<value_type>::const_iterator& list<value_type>::const_iterator::operator++()
     { return (*this) = this->get_next(); }
 
-    template <class value_type, class allocator_type>
-    inline typename list<value_type, allocator_type>::const_iterator list<value_type, allocator_type>::const_iterator::operator++(int)
+    template <class value_type>
+    inline typename list<value_type>::const_iterator list<value_type>::const_iterator::operator++(int)
     {
         auto copy = *this;
 		++(*this);
 		return copy;
     }
 
-    template <class value_type, class allocator_type>
-    inline typename list<value_type, allocator_type>::const_iterator& list<value_type, allocator_type>::const_iterator::operator--()
+    template <class value_type>
+    inline typename list<value_type>::const_iterator& list<value_type>::const_iterator::operator--()
     { return (*this) = this->get_previous(); }
 
-    template <class value_type, class allocator_type>
-    inline typename list<value_type, allocator_type>::const_iterator list<value_type, allocator_type>::const_iterator::operator--(int)
+    template <class value_type>
+    inline typename list<value_type>::const_iterator list<value_type>::const_iterator::operator--(int)
     {
         auto copy = *this;
 		--(*this);
 		return copy;
     }
 
-    template <class value_type, class allocator_type>
-    inline typename list<value_type, allocator_type>::const_reference list<value_type, allocator_type>::const_iterator::operator*() const
+    template <class value_type>
+    inline typename list<value_type>::const_reference list<value_type>::const_iterator::operator*() const
     { return this->_current->_value; }
 
-	template<class value_type, class allocator_type>
-    inline typename list<value_type, allocator_type>::const_pointer list<value_type, allocator_type>::const_iterator::operator->() const
+	template<class value_type>
+    inline typename list<value_type>::const_pointer list<value_type>::const_iterator::operator->() const
     { return &(this->_current->_value); }
 
-    template <class value_type, class allocator_type>
-    inline bool list<value_type, allocator_type>::const_iterator::operator==(const typename list<value_type, allocator_type>::const_iterator& other) const
+    template <class value_type>
+    inline bool list<value_type>::const_iterator::operator==(const typename list<value_type>::const_iterator& other) const
     { return _current == other._current; }
 
-    template <class value_type, class allocator_type>
-    inline bool list<value_type, allocator_type>::const_iterator::operator!=(const typename list<value_type, allocator_type>::const_iterator& other) const
+    template <class value_type>
+    inline bool list<value_type>::const_iterator::operator!=(const typename list<value_type>::const_iterator& other) const
     { return _current != other._current; }
 
-	template<class value_type, class allocator_type>
-	inline list<value_type, allocator_type>::list(): _size(0)
+	template<class value_type>
+	inline list<value_type>::list(): _size(0)
 	{
-		node* buf = new node[2];
-		(this->_before_first) = buf;
-		(this->_past_last) = buf + 1;
+		(_before_first) = {make_node(), 1};
+		(_past_last) = {make_node(), 1};
 
-		this->_before_first->_next[0] = nullptr;
-		this->_before_first->_next[1] = _past_last;
-
-		this->_past_last->_next[0] = _before_first;
-		this->_past_last->_next[1] = nullptr;
+		_before_first._current->_next = std::array<node*, 2>{nullptr, _past_last};
+		_past_last._current->_next = std::array<node*, 2>{_before_first, nullptr};
 	}
 
-    template <class value_type, class allocator_type>
+    template <class value_type>
     template <typename... Args>
-    inline typename list<value_type, allocator_type>::node* list<value_type, allocator_type>::make_node(node *const previous, node *const next, Args &&...args)
-    { return new node({._value = (*allocator.allocate(1) = value_type(args...)), ._next = {previous, next}}); }
+    inline typename list<value_type>::node* list<value_type>::make_node(node *const previous, node *const next, Args &&...args)
+    { return new node({._value = value_type(args...), ._next = {previous, next}}); }
 
-    template <class value_type, class allocator_type>
-    inline list<value_type, allocator_type>::list(const std::initializer_list<value_type>&  it): list(it.begin(), it.end())
+    template <class value_type>
+    inline void list<value_type>::destroy_node(node *to_delete)
+    { delete to_delete; }
+
+    template <class value_type>
+    inline list<value_type>::list(const std::initializer_list<value_type>&  it): list(it.begin(), it.end())
     { }
 
-    template <class value_type, class allocator_type>
-    inline list<value_type, allocator_type>::list(list &&l) : _before_first{l._before_first}, _past_last{l._past_last}
+    template <class value_type>
+    inline list<value_type>::list(list &&l) : _before_first{l._before_first}, _past_last{l._past_last}
     { }
 
-    template<class value_type, class allocator_type>
-	inline typename list<value_type, allocator_type>::iterator list<value_type, allocator_type>::begin()
-	{ return (typename list<value_type, allocator_type>::iterator{nullptr, _before_first}).get_next(); }
+    template<class value_type>
+	inline typename list<value_type>::iterator list<value_type>::begin()
+	{ return _before_first.get_next(); }
 
-	template<class value_type, class allocator_type>
-    inline typename list<value_type, allocator_type>::const_iterator list<value_type, allocator_type>::begin() const
-    { return (typename list<value_type, allocator_type>::const_iterator{nullptr, _before_first}).get_next(); }
+	template<class value_type>
+    inline typename list<value_type>::const_iterator list<value_type>::begin() const
+    { return _before_first.get_next(); }
 
-	template<class value_type, class allocator_type>
-    inline typename list<value_type, allocator_type>::const_iterator list<value_type, allocator_type>::cbegin() const
-    { return (typename list<value_type, allocator_type>::const_iterator{nullptr, _before_first}).get_next(); }
+	template<class value_type>
+    inline typename list<value_type>::const_iterator list<value_type>::cbegin() const
+    { return _before_first.get_next(); }
 
-	template<class value_type, class allocator_type>
-    inline typename list<value_type, allocator_type>::iterator list<value_type, allocator_type>::end()
-    { return (typename list<value_type, allocator_type>::iterator{_past_last, nullptr}).get_previous(); }
+	template<class value_type>
+    inline typename list<value_type>::iterator list<value_type>::end()
+    { return _past_last.get_previous(); }
 
-	template<class value_type, class allocator_type>
-    inline typename list<value_type, allocator_type>::const_iterator list<value_type, allocator_type>::end() const
-    { return (typename list<value_type, allocator_type>::const_iterator{_past_last, nullptr}).get_previous(); }
+	template<class value_type>
+    inline typename list<value_type>::const_iterator list<value_type>::end() const
+    { return _past_last.get_previous(); }
 
-	template<class value_type, class allocator_type>
-    inline typename list<value_type, allocator_type>::const_iterator list<value_type, allocator_type>::cend() const
-    { return (typename list<value_type, allocator_type>::const_iterator{_past_last, nullptr}).get_previous(); }
+	template<class value_type>
+    inline typename list<value_type>::const_iterator list<value_type>::cend() const
+    { return end(); }
 
-    template<class value_type, class allocator_type>
-	inline typename list<value_type, allocator_type>::reverse_iterator list<value_type, allocator_type>::rbegin()
-	{ return typename list<value_type, allocator_type>::reverse_iterator(end()); }
-    template<class value_type, class allocator_type>
-	inline typename list<value_type, allocator_type>::const_reverse_iterator list<value_type, allocator_type>::rbegin() const
-	{ return typename list<value_type, allocator_type>::const_reverse_iterator(end()); }
-    template<class value_type, class allocator_type>
-	inline typename list<value_type, allocator_type>::const_reverse_iterator list<value_type, allocator_type>::crbegin() const
-	{ return typename list<value_type, allocator_type>::const_reverse_iterator(cend()); }
+    template<class value_type>
+	inline typename list<value_type>::reverse_iterator list<value_type>::rbegin()
+	{ return typename list<value_type>::reverse_iterator(end()); }
+    template<class value_type>
+	inline typename list<value_type>::const_reverse_iterator list<value_type>::rbegin() const
+	{ return typename list<value_type>::const_reverse_iterator(end()); }
+    template<class value_type>
+	inline typename list<value_type>::const_reverse_iterator list<value_type>::crbegin() const
+	{ return typename list<value_type>::const_reverse_iterator(cend()); }
 
-    template<class value_type, class allocator_type>
-	inline typename list<value_type, allocator_type>::reverse_iterator list<value_type, allocator_type>::rend()
-	{ return typename list<value_type, allocator_type>::reverse_iterator(begin()); }
-    template<class value_type, class allocator_type>
-	inline typename list<value_type, allocator_type>::const_reverse_iterator list<value_type, allocator_type>::rend() const
-	{ return typename list<value_type, allocator_type>::const_reverse_iterator(begin()); }
-    template<class value_type, class allocator_type>
-	inline typename list<value_type, allocator_type>::const_reverse_iterator list<value_type, allocator_type>::crend() const
-	{ return typename list<value_type, allocator_type>::const_reverse_iterator(cbegin()); }
+    template<class value_type>
+	inline typename list<value_type>::reverse_iterator list<value_type>::rend()
+	{ return typename list<value_type>::reverse_iterator(begin()); }
+    template<class value_type>
+	inline typename list<value_type>::const_reverse_iterator list<value_type>::rend() const
+	{ return typename list<value_type>::const_reverse_iterator(begin()); }
+    template<class value_type>
+	inline typename list<value_type>::const_reverse_iterator list<value_type>::crend() const
+	{ return typename list<value_type>::const_reverse_iterator(cbegin()); }
 
-    template <class value_type, class allocator_type>
+    template <class value_type>
     template <typename inputIt>
-    inline list<value_type, allocator_type>::list(const inputIt& bgn, const inputIt& end)
+    inline list<value_type>::list(const inputIt& bgn, const inputIt& end): list()
     {
-		diffrence_type ssize= std::distance(bgn, end);
-		if constexpr (std::is_signed_v<diffrence_type>)
-			assert(ssize >= 0);
-
-		_size = (size_type)(ssize);
-
-		node** buf = new node*[_size + 2];
-
-		inputIt it = bgn;
-		for(size_type i = 1; i <= _size; ++i)
-			buf[i] = make_node(nullptr, nullptr, *it);
-		for(size_type i = 0; i < _size + 2; ++i)
-		{
-			buf[i]->_next[0] = (i != 0) ? buf[i - 1] : nullptr;
-			buf[i]->_next[1] = (i != _size + 1) ? buf[i + 1] : nullptr;
-		}
-		_before_first = buf[0];
-		_past_last = buf[_size + 1];
+		for(inputIt it = bgn; it != end; ++it)
+			push_back(*it);
     }
 
-    template <class value_type, class allocator_type>
+    template <class value_type>
+    inline typename list<value_type>::size_type list<value_type>::size() const
+    { return _size; }
+    template <class value_type>
+    inline bool list<value_type>::empty() const
+    { return _size == 0; }
+
+    template <class value_type>
     template <typename... Args>
-    inline typename list<value_type, allocator_type>::iterator list<value_type, allocator_type>::emplace(const const_iterator &pos, Args... args)
+    inline typename list<value_type>::iterator list<value_type>::emplace(const const_iterator &pos, Args... args)
     {
 		++_size;
-		list<value_type, allocator_type>::iterator new_node(nullptr, make_node(nullptr, nullptr, args...));
+		list<value_type>::iterator new_node(nullptr, make_node(nullptr, nullptr, args...));
 
-		pos.get_previous() <=> new_node <=> pos; 
+		pos.get_previous() <=> new_node <=> pos;
 		return new_node;
     }
 
-	template<class value_type, class allocator_type>
-	inline typename list<value_type, allocator_type>::iterator list<value_type, allocator_type>::insert
-		(const typename list<value_type, allocator_type>::const_iterator& pos, const value_type &value)
+	template<class value_type>
+	inline typename list<value_type>::iterator list<value_type>::insert
+		(const typename list<value_type>::const_iterator& pos, const value_type &value)
 	{ return emplace(pos, value); }
 
-	template<class value_type, class allocator_type>
-	inline typename list<value_type, allocator_type>::iterator list<value_type, allocator_type>::push_back(const value_type &value)
-	{ return insert(end(), value); }
+    template <class value_type>
+    inline typename list<value_type>::iterator list<value_type>::erase(const iterator &pos)
+    {
+        destroy_node(pos._current);
+		return pos.get_previous() <=> pos.get_next();
+    }
 
-	template<class value_type, class allocator_type>
-	inline typename list<value_type, allocator_type>::iterator list<value_type, allocator_type>::push_front(const value_type &value)
+    template <class value_type>
+    inline typename list<value_type>::iterator list<value_type>::push_back(const value_type &value)
+    { return insert(end(), value); }
+
+	template<class value_type>
+	inline typename list<value_type>::iterator list<value_type>::push_front(const value_type &value)
 	{ return insert(begin(), value); }
 
+	template <class value_type>
+    inline void list<value_type>::pop_back()
+    { erase(end().get_previous()); }
 
+	template <class value_type>
+    inline void list<value_type>::pop_front()
+    { erase(begin()); }
+
+
+	template<class value_type>
+	inline void list<value_type>::reverse()
+	{ return _before_first._direction ^= 1, _past_last._direction ^= 1, std::swap(_before_first, _past_last); }
+
+    template <class value_type>
+    inline list<value_type>::~list()
+    {
+		while(!empty())
+			pop_back();
+	}
 }
