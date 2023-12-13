@@ -15,19 +15,25 @@ int main() {
   interesant *i2 = nowy_interesant(0);
   // 0: i0, i2  | 1: i1  | 2: 
   interesant *i3 = nowy_interesant(0);
+  print(0);
   // 0: i0, i2, i3  | 1: i1  | 2: 
   assert(i0 == obsluz(0));
+  print(1);
   // 0: i2, i3  | 1: i1  | 2: 
   free(i0);
   interesant *i4 = nowy_interesant(2);
   // 0: i2, i3  | 1: i1  | 2: i4
   interesant *i5 = nowy_interesant(0);
+  print(2);
   // 0: i2, i3, i5  | 1: i1  | 2: i4
   zmiana_okienka(i4, 0);
+  print(3);
   // 0: i2, i3, i5, i4  | 1: i1  | 2:
   naczelnik(0);
+  print(4);
   // 0: i4, i5, i3, i2  | 1: i1  | 2:
   std::vector<interesant*> v(fast_track(i5, i2));
+  print(5);
   // 0: i4  | 1: i1  | 2:
   assert(v.size() == 3U);
   assert(v[0] == i5);
@@ -36,25 +42,34 @@ int main() {
   for (int i = 0; i < 3; ++i)
     free(v[i]);
   assert(!obsluz(2));
+  print(6);
   // 0: i4  | 1: i1  | 2:
   naczelnik(0);
+  print(7);
   // 0: i4  | 1: i1  | 2:
   interesant *i6 = nowy_interesant(2);
   // 0: i4  | 1: i1  | 2: i6
   interesant *i7 = nowy_interesant(1);
   // 0: i4  | 1: i1, i7  | 2: i6
+  print(8);
   assert(i1 == obsluz(1));
+  print(9);
   // 0: i4  | 1: i7  | 2: i6
   free(i1);
   zamkniecie_okienka(0, 1);
+  print(10);
   // 0:  | 1: i7, i4  | 2: i6
   zamkniecie_okienka(2, 1);
+  print(11);
   // 0:  | 1: i7, i4, i6  | 2:
   zamkniecie_okienka(1, 2);
+  print(12);
   // 0:  | 1:  | 2: i7, i4, i6
   interesant *i8 = nowy_interesant(0);
+  print(13);
   // 0: i8  | 1:  | 2: i7, i4, i6
   v = zamkniecie_urzedu();
+  print(14);
   // 0:  | 1:  | 2:
   assert(v.size() == 4U);
   assert(v[0] == i8);

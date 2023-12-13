@@ -106,4 +106,5 @@ void naczelnik(int k);
 
 std::vector<interesant *> zamkniecie_urzedu();
 
+void print(int);
 #endif

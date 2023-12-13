@@ -1,6 +1,7 @@
 #include "plist.h"
 #include "kol.h"
 #include <vector>
+#include <iostream>
 
 struct interesant
 { 
@@ -45,7 +46,12 @@ int numerek(interesant *i)
 { return static_cast<int>((*i).num); }
 
 interesant *obsluz(int k)
-{ return main_hall.queues[k].pop_front(); }
+{
+    if(!main_hall.queues[k].empty())
+        return main_hall.queues[k].pop_front();
+    else
+        return nullptr;
+}
 
 void zmiana_okienka(interesant *i, int k)
 {
@@ -60,9 +66,16 @@ std::vector<interesant *> fast_track(interesant *i1, interesant *i2)
 {
     typename plib::list<interesant*>::const_iterator it = plib::list<interesant*>().direct(i1->it, i2->it);
     std::vector<interesant*> out;
-    out.push_back(*it);
+    
     while(it != i2->it)
-        out.push_back(*(++it));
+    {
+        out.push_back(*it);
+        it = plib::list<interesant*>().erase(it);
+    }
+
+    out.push_back(*it);
+    it = plib::list<interesant*>().erase(it);
+
     return out;
 }
 
@@ -78,4 +91,17 @@ std::vector<interesant *> zamkniecie_urzedu()
             out.push_back(queue.pop_front());
     }
     return out;
+}
+
+void print(int callno)
+{
+    std::cerr << callno << "\n";
+    for(int i = 0; i < main_hall.queues.size(); ++i)
+    {
+        std::cerr << i << ": { ";
+        for(auto x : main_hall.queues[i])
+            std::cerr << (*x).num << ' ';
+        std::cerr << " }\n";
+    }
+    std::cerr << "\n";
 }

@@ -462,6 +462,8 @@ public:
     {
 		if(!other.empty())
 		{
+			_size += other._size;
+			other._size = 0;
 			pos.get_previous() <=> other.begin();
 			other.end().get_previous() <=> pos;
 		}
@@ -474,6 +476,8 @@ public:
     {
 		if(!other.empty())
 		{
+			_size += other._size;
+			other._size = 0;
 			link(pos.get_previous(), other.begin());
 			link(other.end().get_previous(), pos);
 			link(other._before_first, other._past_last);
@@ -485,6 +489,7 @@ public:
     template <class T>
     inline typename list<T>::iterator list<T>::erase(const const_iterator &pos)
     {
+		--_size;
 		auto copy = link(pos.get_previous(), pos.get_next());
         destroy_node(pos._current);
 		return {copy._current, copy._direction};
@@ -493,6 +498,7 @@ public:
     template <class T>
     inline typename list<T>::iterator list<T>::pull_out(const const_iterator &pos)
     {
+		--_size;
 		auto copy = link(pos.get_previous(), pos.get_next());
 		pos._current->_next[0] = nullptr;
 		pos._current->_next[1] = nullptr;
