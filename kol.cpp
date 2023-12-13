@@ -42,16 +42,40 @@ interesant *nowy_interesant(int k)
 }
 
 int numerek(interesant *i)
-{ return (*i).num;}
+{ return static_cast<int>((*i).num); }
 
 interesant *obsluz(int k)
-{
-    auto copy = *main_hall.queues[k].begin();
-    main_hall.queues[k].pop_front();
-    return copy;
-}
+{ return main_hall.queues[k].pop_front(); }
 
 void zmiana_okienka(interesant *i, int k)
 {
+    main_hall.queues[k].erase(i->it);
+    main_hall.queues[k].emplace_back(i);
+}
 
+void zamkniecie_okienka(int k1, int k2)
+{ main_hall.queues[k2].push_back(main_hall.queues[k1]); }
+
+std::vector<interesant *> fast_track(interesant *i1, interesant *i2)
+{
+    typename plib::list<interesant*>::const_iterator it = plib::list<interesant*>().direct(i1->it, i2->it);
+    std::vector<interesant*> out;
+    out.push_back(*it);
+    while(it != i2->it)
+        out.push_back(*(++it));
+    return out;
+}
+
+void naczelnik(int k)
+{ main_hall.queues[k].reverse(); }
+
+std::vector<interesant *> zamkniecie_urzedu()
+{
+    std::vector<interesant*> out;
+    for(auto& queue : main_hall.queues)
+    {
+        while(!queue.empty())
+            out.push_back(queue.pop_front());
+    }
+    return out;
 }

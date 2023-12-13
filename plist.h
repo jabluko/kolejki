@@ -97,14 +97,15 @@ namespace plib
 			~const_iterator() = default;
 		};
 
+		using value_type = T;
 		using size_type = size_t;
 		using difference_type = std::ptrdiff_t;
 
-		using reference = T&;
-		using const_reference = const T&;
+		using reference = value_type&;
+		using const_reference = const value_type&;
 
-		using pointer = T*;
-		using const_pointer = const T*;
+		using pointer = value_type*;
+		using const_pointer = const value_type*;
 		
 		class iterator;
 		class const_iterator;
@@ -135,21 +136,27 @@ namespace plib
 		iterator begin();
 		const_iterator begin() const;
 		const_iterator cbegin() const;
-			
-		iterator end();
-		const_iterator end() const;
-		const_iterator cend() const;
 
 		reverse_iterator rbegin();
 		const_reverse_iterator rbegin() const;
 		const_reverse_iterator crbegin() const;
 
+		reference front();
+		const_reference front() const;
+			
+		iterator end();
+		const_iterator end() const;
+		const_iterator cend() const;
+
 		reverse_iterator rend();
 		const_reverse_iterator rend() const;
 		const_reverse_iterator crend() const;
+
+		reference back();
+		const_reference back() const;
 		
 		template<typename ...Args>
-		iterator emplace(const const_iterator& pos, Args... args);
+		iterator emplace(const const_iterator& pos, Args&&... args);
 		iterator insert(const const_iterator& pos, const T& value);
 		
 		template<typename _InputIterator>
@@ -157,20 +164,29 @@ namespace plib
 		iterator insert(const const_iterator& pos, list&& value);
 		iterator insert(const const_iterator& pos, list& value);
 
-		iterator erase(const iterator& pos);
+		iterator erase(const const_iterator& pos);
+		iterator pull_out(const const_iterator& pos);
+
+		template<typename ...Args>
+		iterator emplace_back(Args&&... args);
+		template<typename ...Args>
+		iterator emplace_front(Args&&... args);
 
 		iterator push_back(const T& value);
 		iterator push_front(const T& value);
 
-		
+		iterator push_back(list& value);
+		iterator push_back(list&& value);
 
-		//iterator push_back(list value);
-		//iterator push_front(list value);
+		iterator push_front(list& value);
+		iterator push_front(list&& value);
 
-		void pop_back();
-		void pop_front();
+		value_type pop_back();
+		value_type pop_front();
 			
 		void reverse();
+
+		iterator direct(const const_iterator&, const const_iterator&);
 
 		~list();
 
@@ -194,9 +210,10 @@ public:
 public:
 	};
 
+
     template <class T>
     template <typename... Args>
-    inline typename list<T>::node* list<T>::make_node(node *const previous, node *const next, Args &&...args)
+    inline typename list<T>::node *list<T>::make_node(node *const previous, node *const next, Args &&...args)
     { return new node({._value = T(args...), ._next = {previous, next}}); }
 
     template <class T>
@@ -355,6 +372,26 @@ public:
     inline typename list<T>::const_iterator list<T>::cbegin() const
     { return _before_first.get_next(); }
 
+    template<class T>
+	inline typename list<T>::reverse_iterator list<T>::rbegin()
+	{ return typename list<T>::reverse_iterator(end()); }
+	
+    template<class T>
+	inline typename list<T>::const_reverse_iterator list<T>::rbegin() const
+	{ return typename list<T>::const_reverse_iterator(end()); }
+
+    template<class T>
+	inline typename list<T>::const_reverse_iterator list<T>::crbegin() const
+	{ return typename list<T>::const_reverse_iterator(cend()); }
+
+    template<class T>
+	inline typename list<T>::reference list<T>::front()
+	{ return *begin(); }
+
+    template<class T>
+	inline typename list<T>::const_reference list<T>::front() const
+	{ return *begin(); }
+
 	template<class T>
     inline typename list<T>::iterator list<T>::end()
     { return _past_last; }
@@ -368,24 +405,24 @@ public:
     { return end(); }
 
     template<class T>
-	inline typename list<T>::reverse_iterator list<T>::rbegin()
-	{ return typename list<T>::reverse_iterator(end()); }
-    template<class T>
-	inline typename list<T>::const_reverse_iterator list<T>::rbegin() const
-	{ return typename list<T>::const_reverse_iterator(end()); }
-    template<class T>
-	inline typename list<T>::const_reverse_iterator list<T>::crbegin() const
-	{ return typename list<T>::const_reverse_iterator(cend()); }
-
-    template<class T>
 	inline typename list<T>::reverse_iterator list<T>::rend()
 	{ return typename list<T>::reverse_iterator(begin()); }
+
     template<class T>
 	inline typename list<T>::const_reverse_iterator list<T>::rend() const
 	{ return typename list<T>::const_reverse_iterator(begin()); }
+
     template<class T>
 	inline typename list<T>::const_reverse_iterator list<T>::crend() const
 	{ return typename list<T>::const_reverse_iterator(cbegin()); }
+
+    template<class T>
+	inline typename list<T>::reference list<T>::back()
+	{ return *(end().get_previous()); }
+
+    template<class T>
+	inline typename list<T>::const_reference list<T>::back() const
+	{ return *(end().get_previous()); }
 
     template <class T>
     template <typename inputIt>
@@ -404,7 +441,7 @@ public:
 
     template <class T>
     template <typename... Args>
-    inline typename list<T>::iterator list<T>::emplace(const const_iterator &pos, Args... args)
+    inline typename list<T>::iterator list<T>::emplace(const const_iterator &pos, Args&&... args)
     {
 		++_size;
 		list<T>::iterator new_node(make_node(nullptr, nullptr, args...), pos._direction);
@@ -415,7 +452,7 @@ public:
 		return new_node;
     }
 
-	template<class T>
+    template<class T>
 	inline typename list<T>::iterator list<T>::insert
 		(const typename list<T>::const_iterator& pos, const T &value)
 	{ return emplace(pos, value); }
@@ -446,33 +483,99 @@ public:
     }
 
     template <class T>
-    inline typename list<T>::iterator list<T>::erase(const iterator &pos)
+    inline typename list<T>::iterator list<T>::erase(const const_iterator &pos)
     {
 		auto copy = link(pos.get_previous(), pos.get_next());
         destroy_node(pos._current);
+		return {copy._current, copy._direction};
+    }
+
+    template <class T>
+    inline typename list<T>::iterator list<T>::pull_out(const const_iterator &pos)
+    {
+		auto copy = link(pos.get_previous(), pos.get_next());
+		pos._current->_next[0] = nullptr;
+		pos._current->_next[1] = nullptr;
 		return copy;
     }
+
+    template <class T>
+    template <typename... Args>
+    inline typename list<T>::iterator list<T>::emplace_back(Args &&...args)
+    { return emplace(cend(), args...); }
 
     template <class T>
     inline typename list<T>::iterator list<T>::push_back(const T &value)
     { return insert(cend(), value); }
 
+    template <class T>
+    inline typename list<T>::iterator list<T>::push_back(list &value)
+    { return insert(cend(), value); }
+    template <class T>
+    inline typename list<T>::iterator list<T>::push_back(list &&value)
+    { return insert(cend(), value); }
+
+    template <class T>
+    template <typename... Args>
+    inline typename list<T>::iterator list<T>::emplace_front(Args &&...args)
+    { return emplace(cbegin(), args...); }
+
 	template<class T>
 	inline typename list<T>::iterator list<T>::push_front(const T &value)
 	{ return insert(cbegin(), value); }
 
-	template <class T>
-    inline void list<T>::pop_back()
-    { erase(end().get_previous()); }
+	template<class T>
+	inline typename list<T>::iterator list<T>::push_front(list &value)
+	{ return insert(cbegin(), value); }
+
+	template<class T>
+	inline typename list<T>::iterator list<T>::push_front(list&& value)
+	{ return insert(cbegin(), value); }
+
+
+    template <class T>
+    inline typename list<T>::value_type list<T>::pop_back()
+    { 
+		auto copy = back();
+		erase(cend().get_previous());
+		return copy;
+	}
 
 	template <class T>
-    inline void list<T>::pop_front()
-    { erase(begin()); }
+    inline typename list<T>::value_type list<T>::pop_front()
+    { 
+		auto copy = front();
+		erase(cbegin());
+		return copy;
+	}
 
 
 	template<class T>
 	inline void list<T>::reverse()
 	{ return _before_first._direction ^= 1, _past_last._direction ^= 1, std::swap(_before_first, _past_last); }
+
+    template <class T>
+    inline typename list<T>::iterator list<T>::direct(const typename list<T>::const_iterator& it, const typename list<T>::const_iterator& direction)
+    {
+        const_iterator it1 = {it._current, it._direction};
+		const_iterator it2 = {it._current, !it._direction};
+
+		while(it1._current && it1 != direction && it2._current && it2 != direction)  
+			++it1, ++it2;
+		
+		while(it1._current && it1 != direction)
+			++it1;
+
+		while(it2._current && it2 != direction)
+			++it2;
+
+		if(it1 == direction)
+			return {it._current, it1._direction};
+		if(it2 == direction)
+			return {it._current, it2._direction};
+
+		return {nullptr, 0};
+    }
 
     template <class T>
     inline list<T>::~list()
