@@ -2,9 +2,10 @@
 #include "kol.h"
 #include <vector>
 
-struct interesant: plib::list<size_t>::iterator
+struct interesant
 { 
-    
+    size_t num;
+    plib::list<interesant*>::const_iterator it;
 };
 
 struct city_hall
@@ -12,7 +13,7 @@ struct city_hall
     using size_type = std::size_t;
 
     size_type counter;
-    std::vector<plib::list<size_type>> queues;
+    std::vector<plib::list<interesant*>> queues;
 
     city_hall() = default;
     city_hall(const city_hall&) = default;
@@ -35,16 +36,22 @@ void otwarcie_urzedu(int m)
 interesant *nowy_interesant(int k)
 {
     interesant* out = (interesant*)malloc(sizeof(interesant));
-    (*out) = interesant{main_hall.queues[k].push_back(main_hall.counter++)};
+    out->num = main_hall.counter++;
+    out->it = main_hall.queues[k].push_back(out);
     return out;
 }
 
 int numerek(interesant *i)
-{ return **i;}
+{ return (*i).num;}
 
 interesant *obsluz(int k)
 {
-    auto copy = main_hall.queues[k].begin();
+    auto copy = *main_hall.queues[k].begin();
     main_hall.queues[k].pop_front();
     return copy;
+}
+
+void zmiana_okienka(interesant *i, int k)
+{
+
 }

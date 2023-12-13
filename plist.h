@@ -61,7 +61,6 @@ namespace plib
 		{
 		protected:
 			friend class list;
-			const const_iterator& operator<=>(const const_iterator&) const;
 			node* _current;
 			bool _direction;
 		public:
@@ -227,7 +226,7 @@ public:
 
     template <class T>
     inline typename list<T>::iterator list<T>::iterator::get_previous() const
-    { return { _current->_next[!_direction], (_current->_next[_direction] && _current == _current->_next[!_direction]->_next[1]) }; }
+    { return { _current->_next[!_direction], (_current->_next[!_direction] && _current == _current->_next[!_direction]->_next[1]) }; }
 
     template <class T>
     inline typename list<T>::iterator &list<T>::iterator::operator++()
@@ -278,17 +277,6 @@ public:
     inline list<T>::const_iterator::const_iterator(node *const current, bool direction)
         : _current{current}, _direction{direction}
     { }
-
-	template <class T>
-    inline const typename list<T>::const_iterator& list<T>::const_iterator::operator<=>(const const_iterator &next) const
-    {
-		if(_current)
-			_current->_next[_direction] = next._current;
-
-		if(next._current)
-			next._current->_next[!next._direction] = this->_current;
-		return next;
-    }
 
     template <class T>
     inline typename list<T>::const_iterator list<T>::const_iterator::get_next() const
@@ -421,7 +409,9 @@ public:
 		++_size;
 		list<T>::iterator new_node(make_node(nullptr, nullptr, args...), pos._direction);
 
-		pos.get_previous() <=> new_node <=> pos;
+		link(pos.get_previous(), new_node);
+		link(new_node, pos);
+		
 		return new_node;
     }
 

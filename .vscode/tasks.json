@@ -27,7 +27,8 @@
                 "-fdiagnostics-color=always",
                 "${file}",
                 "-o",
-                "${fileDirname}/${fileBasenameNoExtension}"
+                "${fileDirname}/${fileBasenameNoExtension}.c"
+                "${fileDirname}/${fileBasenameNoExtension}.h"
             ],
             "options": {
                 "cwd": "${fileDirname}"

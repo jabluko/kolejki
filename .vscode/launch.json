@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": false,
-      "cwd": "/home/jabluko/lab/kolejki",
-      "program": "/home/jabluko/lab/kolejki/build/Debug/outDebug",
+      "cwd": "/home/students/inf/p/pm459239/Pulpit/kolejki",
+      "program": "/home/students/inf/p/pm459239/Pulpit/kolejki/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [
