@@ -3,7 +3,9 @@
 #include <vector>
 
 struct interesant: plib::list<size_t>::iterator
-{ };
+{ 
+    
+};
 
 struct city_hall
 {
@@ -39,3 +41,10 @@ interesant *nowy_interesant(int k)
 
 int numerek(interesant *i)
 { return **i;}
+
+interesant *obsluz(int k)
+{
+    auto copy = main_hall.queues[k].begin();
+    main_hall.queues[k].pop_front();
+    return copy;
+}
