@@ -23,7 +23,7 @@ namespace plib
 			node* _current;
 			bool _direction;
 		public:
-			using iterator_tag = std::bidirectional_iterator_tag;
+			using iterator_category = std::bidirectional_iterator_tag;
 			using difference_type = ptrdiff_t;
 			using value_type = T;
 
@@ -64,7 +64,7 @@ namespace plib
 			node* _current;
 			bool _direction;
 		public:
-			using iterator_tag = std::bidirectional_iterator_tag;
+			using iterator_category = std::bidirectional_iterator_tag;
 			using difference_type = ptrdiff_t;
 			using value_type = const T;
 
@@ -106,17 +106,12 @@ namespace plib
 
 		using pointer = value_type*;
 		using const_pointer = const value_type*;
-		
-		class iterator;
-		class const_iterator;
 
 		using reverse_iterator = std::reverse_iterator<iterator>;
 		using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
 		iterator _before_first;
 		iterator _past_last;
-		size_type _size;
-
 		list();
 
 		list(const list<T>&);
@@ -344,7 +339,7 @@ public:
     { return _current != other._current; }
 
 	template<class T>
-	inline list<T>::list(): _size(0)
+	inline list<T>::list()
 	{
 		(_before_first) = {make_node(), 1};
 		(_past_last) = {make_node(), 1};
@@ -434,16 +429,15 @@ public:
 
     template <class T>
     inline typename list<T>::size_type list<T>::size() const
-    { return _size; }
+    { return std::distance(cbegin(), cend()); }
     template <class T>
     inline bool list<T>::empty() const
-    { return _size == 0; }
+    { return cbegin() == cend(); }
 
     template <class T>
     template <typename... Args>
     inline typename list<T>::iterator list<T>::emplace(const const_iterator &pos, Args&&... args)
     {
-		++_size;
 		list<T>::iterator new_node(make_node(nullptr, nullptr, args...), pos._direction);
 
 		link(pos.get_previous(), new_node);
@@ -462,10 +456,8 @@ public:
     {
 		if(!other.empty())
 		{
-			_size += other._size;
-			other._size = 0;
-			pos.get_previous() <=> other.begin();
-			other.end().get_previous() <=> pos;
+			link(pos.get_previous(), other.begin());
+			link(other.end().get_previous(), pos);
 		}
 		
 		return {pos._current, pos._direction};
@@ -476,8 +468,6 @@ public:
     {
 		if(!other.empty())
 		{
-			_size += other._size;
-			other._size = 0;
 			link(pos.get_previous(), other.begin());
 			link(other.end().get_previous(), pos);
 			link(other._before_first, other._past_last);
@@ -489,7 +479,6 @@ public:
     template <class T>
     inline typename list<T>::iterator list<T>::erase(const const_iterator &pos)
     {
-		--_size;
 		auto copy = link(pos.get_previous(), pos.get_next());
         destroy_node(pos._current);
 		return {copy._current, copy._direction};
@@ -498,7 +487,6 @@ public:
     template <class T>
     inline typename list<T>::iterator list<T>::pull_out(const const_iterator &pos)
     {
-		--_size;
 		auto copy = link(pos.get_previous(), pos.get_next());
 		pos._current->_next[0] = nullptr;
 		pos._current->_next[1] = nullptr;

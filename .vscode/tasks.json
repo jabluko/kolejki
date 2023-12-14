@@ -25,10 +25,11 @@
                 " -DLOCAL " ,
                 " -O0 ",
                 "-fdiagnostics-color=always",
-                "${file}",
+                "${workspaceFolder}/plist.h",
+                "${workspaceFolder}/kol.cpp",
+                "${workspaceFolder}/kol.h",
+                "${workspaceFolder}/main.cpp",
                 "-o",
-                "${workspaceFolder}/*.c",
-                "${workspaceFolder}/*.h",
                 "${fileDirname}/${fileBasenameNoExtension}"
             ],
             "options": {

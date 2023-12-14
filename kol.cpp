@@ -56,7 +56,7 @@ interesant *obsluz(int k)
 void zmiana_okienka(interesant *i, int k)
 {
     main_hall.queues[k].erase(i->it);
-    main_hall.queues[k].emplace_back(i);
+    i->it = main_hall.queues[k].emplace_back(i);
 }
 
 void zamkniecie_okienka(int k1, int k2)
@@ -95,10 +95,10 @@ std::vector<interesant *> zamkniecie_urzedu()
 
 void print(int callno)
 {
-    std::cerr << callno << "\n";
+    std::cerr << callno << '\n';
     for(int i = 0; i < main_hall.queues.size(); ++i)
     {
-        std::cerr << i << ": { ";
+        std::cerr << i << " size: " << main_hall.queues[i].size() << ": { ";
         for(auto x : main_hall.queues[i])
             std::cerr << (*x).num << ' ';
         std::cerr << " }\n";
