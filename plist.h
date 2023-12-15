@@ -12,8 +12,9 @@ namespace plib
 	template <class T>
 	class list
 	{
-	public:
+	private:
 		struct node;
+	public:
 		class iterator;
 		class const_iterator;
 
@@ -41,9 +42,6 @@ namespace plib
 				
 			iterator& operator=(const iterator&) = default;
 			iterator& operator=(iterator&&) = default;
-
-			iterator get_next() const;
-			iterator get_previous() const;
 
 			iterator& operator++();
 			iterator operator++(int);
@@ -81,9 +79,6 @@ namespace plib
 
 			const_iterator& operator=(const const_iterator&) = default;
 			const_iterator& operator=(const_iterator&&) = default;
-
-			const_iterator get_next() const;
-			const_iterator get_previous() const;
 
 			const_iterator& operator++();
 			const_iterator operator++(int);
@@ -186,7 +181,7 @@ namespace plib
 
 		~list();
 
-public:
+private:
 		struct node
 		{
 		private:
@@ -202,8 +197,6 @@ public:
 
 		template<typename it1_t, typename it2_t>
 		const it2_t& link(const it1_t&, const it2_t&);
-
-public:
 	};
 
 
@@ -234,16 +227,8 @@ public:
     { }
 
     template <class T>
-    inline typename list<T>::iterator list<T>::iterator::get_next() const
-    { return { _current->_next[_direction], (_current->_next[_direction] && _current == _current->_next[_direction]->_next[0]) }; }
-
-    template <class T>
-    inline typename list<T>::iterator list<T>::iterator::get_previous() const
-    { return { _current->_next[!_direction], (_current->_next[!_direction] && _current == _current->_next[!_direction]->_next[1]) }; }
-
-    template <class T>
     inline typename list<T>::iterator &list<T>::iterator::operator++()
-    { return (*this) = this->get_next(); }
+    { return (*this) = { _current->_next[_direction], _current == _current->_next[_direction]->_next[0] }; }
 
 	template <class T>
 	inline typename list<T>::iterator list<T>::iterator::operator++(int)
@@ -255,7 +240,7 @@ public:
 	
 	template <class T>
 	inline typename list<T>::iterator& list<T>::iterator::operator--()
-	{ return (*this) = this->get_previous(); }
+	{ return (*this) = { _current->_next[!_direction], _current == _current->_next[!_direction]->_next[1] }; }
 
 	template <class T>
 	inline typename list<T>::iterator list<T>::iterator::operator--(int)
@@ -292,16 +277,10 @@ public:
     { }
 
     template <class T>
-    inline typename list<T>::const_iterator list<T>::const_iterator::get_next() const
-    { return { _current->_next[_direction], (_current->_next[_direction] && _current == _current->_next[_direction]->_next[0]) }; }
-
-    template <class T>
-    inline typename list<T>::const_iterator list<T>::const_iterator::get_previous() const
-    { return { _current->_next[!_direction], (_current->_next[!_direction] && _current == _current->_next[!_direction]->_next[1]) }; }
-
-    template <class T>
     inline typename list<T>::const_iterator& list<T>::const_iterator::operator++()
-    { return (*this) = this->get_next(); }
+    { return (*this) = { _current->_next[_direction],
+						(_current->_next[_direction] &&
+						_current == _current->_next[_direction]->_next[0]) }; }
 
     template <class T>
     inline typename list<T>::const_iterator list<T>::const_iterator::operator++(int)
@@ -313,7 +292,7 @@ public:
 
     template <class T>
     inline typename list<T>::const_iterator& list<T>::const_iterator::operator--()
-    { return (*this) = this->get_previous(); }
+    { return (*this) = { _current->_next[!_direction], _current == _current->_next[!_direction]->_next[1] }; }
 
     template <class T>
     inline typename list<T>::const_iterator list<T>::const_iterator::operator--(int)
@@ -380,15 +359,15 @@ public:
 
     template <class T>
 	inline typename list<T>::iterator list<T>::begin()
-	{ return _before_first.get_next(); }
+	{ return std::next(_before_first); }
 
 	template <class T>
     inline typename list<T>::const_iterator list<T>::begin() const
-    { return _before_first.get_next(); }
+    { return std::next(_before_first); }
 
 	template <class T>
     inline typename list<T>::const_iterator list<T>::cbegin() const
-    { return _before_first.get_next(); }
+    { return std::next(_before_first); }
 
     template <class T>
 	inline typename list<T>::reverse_iterator list<T>::rbegin()
@@ -436,11 +415,11 @@ public:
 
     template <class T>
 	inline typename list<T>::reference list<T>::back()
-	{ return *(end().get_previous()); }
+	{ return *(std::prev(end())); }
 
     template <class T>
 	inline typename list<T>::const_reference list<T>::back() const
-	{ return *(end().get_previous()); }
+	{ return *(std::prev(end())); }
 
     template <class T>
     template <typename inputIt>
@@ -463,7 +442,7 @@ public:
     {
 		list<T>::iterator new_node(make_node(nullptr, nullptr, args...), pos._direction);
 
-		link(pos.get_previous(), new_node);
+		link(std::prev(pos), new_node);
 		link(new_node, pos);
 		
 		return new_node;
@@ -484,8 +463,8 @@ public:
     {
 		if(!other.empty())
 		{
-			link(pos.get_previous(), other.begin());
-			link(other.end().get_previous(), pos);
+			link(std::prev(pos), other.begin());
+			link(std::prev(other.end()), pos);
 		}
 		
 		return {pos._current, pos._direction};
@@ -496,8 +475,8 @@ public:
     {
 		if(!other.empty())
 		{
-			link(pos.get_previous(), other.begin());
-			link(other.end().get_previous(), pos);
+			link(std::prev(pos), other.begin());
+			link(std::prev(other.end()), pos);
 			link(other._before_first, other._past_last);
 		}
 		
@@ -507,17 +486,16 @@ public:
     template <class T>
     inline typename list<T>::iterator list<T>::erase(const const_iterator &pos)
     {
-		assert(pos.get_previous().get_next() == pos.get_next().get_previous());
-		auto next = pos.get_next();
-		link(pos.get_previous(), pos.get_next());
+		auto copy = std::next(pos);
+		link(std::prev(pos), std::next(pos));
         destroy_node(pos._current);
-		return {next._current, next._direction};
+		return {copy._current, copy._direction};
     }
 
     template <class T>
     inline typename list<T>::iterator list<T>::pull_out(const const_iterator &pos)
     {
-		auto copy = link(pos.get_previous(), pos.get_next());
+		auto copy = link(std::prev(pos), std::next(pos));
 		pos._current->_next[0] = nullptr;
 		pos._current->_next[1] = nullptr;
 		return copy;
@@ -560,7 +538,7 @@ public:
     inline typename list<T>::value_type list<T>::pop_back()
     { 
 		auto copy = back();
-		erase(cend().get_previous());
+		erase(std::prev(cend()));
 		return copy;
 	}
 
@@ -588,10 +566,8 @@ public:
 
 		if(it1 == direction || !it2._current)
 			return {it._current, 0};
-		if(it2 == direction || !it1._current)
+		else
 			return {it._current, 1};
-
-		assert(false);
     }
 
     template <class T>
