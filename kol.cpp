@@ -99,8 +99,10 @@ void print(int callno)
     for(int i = 0; i < main_hall.queues.size(); ++i)
     {
         std::cerr << i << " size: " << main_hall.queues[i].size() << ": { ";
+        main_hall.queues[i].reverse();
         for(auto x : main_hall.queues[i])
             std::cerr << (*x).num << ' ';
+        main_hall.queues[i].reverse();
         std::cerr << " }\n";
     }
     std::cerr << "\n";

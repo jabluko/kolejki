@@ -2,10 +2,23 @@
 #include <cstdio>
 #include <cstdlib>
 #include <vector>
+#include <iostream>
 
 #include "kol.h"
+#include "plist.h"
 
-int main() {
+int main() 
+{
+  plib::list<int> a({1, 5, 7 , 9, 2, 8});
+  plib::list<int> b({0, -1, -7, -4, -5});
+
+  a = std::move(b);
+  for(const auto& x : a)
+    std::cout << x << "\n";
+  return 0;
+
+
+
   otwarcie_urzedu(3);
   // 0:  | 1:  | 2: 
   interesant *i0 = nowy_interesant(0);
