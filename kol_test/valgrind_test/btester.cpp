@@ -17,7 +17,7 @@ using namespace std;
 // Odkomentuj #undef DEBUG aby pozbyć się wypisywania kroków.
 
 #define DEBUG
-#undef DEBUG
+//#undef DEBUG
 
 #ifdef DEBUG
 #define debug(X) cout << X
@@ -43,7 +43,7 @@ int main()
     
     // Zakresy można modyfikować aby generować duże/małe testy.
     int m = randint(1, 10);
-    int q = randint(1, 1000);
+    int q = randint(1, 10);
     
     debug("m = " << m << "\n" << flush);
     

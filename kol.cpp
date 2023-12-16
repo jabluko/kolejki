@@ -9,24 +9,12 @@ struct interesant
     plib::list<interesant*>::const_iterator it;
 };
 
-struct city_hall
+struct city_hall: public std::vector<plib::list<interesant*>>
 {
+    using std::vector<plib::list<interesant*>>::vector;
     using size_type = std::size_t;
 
     size_type counter;
-    std::vector<plib::list<interesant*>> queues;
-
-    city_hall() = default;
-    city_hall(const city_hall&) = default;
-    city_hall(city_hall&&) = default;
-
-    city_hall(size_type size) : counter{0}, queues{size}
-    { }
-
-    city_hall& operator=(const city_hall&) = default;
-    city_hall& operator=(city_hall&&) = default;
-
-    ~city_hall() = default;
 };
 
 static thread_local city_hall main_hall;
@@ -38,7 +26,7 @@ interesant *nowy_interesant(int k)
 {
     interesant* out = (interesant*)malloc(sizeof(interesant));
     out->num = main_hall.counter++;
-    out->it = main_hall.queues[k].push_back(out);
+    out->it = main_hall[k].push_back(out);
     return out;
 }
 
@@ -47,24 +35,24 @@ int numerek(interesant *i)
 
 interesant *obsluz(int k)
 {
-    if(!main_hall.queues[k].empty())
-        return main_hall.queues[k].pop_front();
+    if(!main_hall[k].empty())
+        return main_hall[k].pop_front();
     else
         return nullptr;
 }
 
 void zmiana_okienka(interesant *i, int k)
 {
-    main_hall.queues[k].erase(i->it);
-    i->it = main_hall.queues[k].emplace_back(i);
+    plib::list<interesant*>().erase(i->it);
+    i->it = main_hall[k].emplace_back(i);
 }
 
 void zamkniecie_okienka(int k1, int k2)
-{ main_hall.queues[k2].merge_back(main_hall.queues[k1]); }
+{ main_hall[k2].merge_back(main_hall[k1]); }
 
 std::vector<interesant *> fast_track(interesant *i1, interesant *i2)
 {
-    typename plib::list<interesant*>::const_iterator it = plib::list<interesant*>().direct(i1->it, i2->it);
+    auto it = direct(i1->it, i2->it);
     std::vector<interesant*> out;
     
     while(it != i2->it)
@@ -73,37 +61,21 @@ std::vector<interesant *> fast_track(interesant *i1, interesant *i2)
         it = plib::list<interesant*>().erase(it);
     }
 
-    out.push_back(*it);
-    it = plib::list<interesant*>().erase(it);
+    out.push_back(i2);
+    plib::list<interesant*>().erase(i2->it);
 
     return out;
 }
 
 void naczelnik(int k)
-{ main_hall.queues[k].reverse(); }
+{ main_hall[k].reverse(); }
 
 std::vector<interesant *> zamkniecie_urzedu()
 {
     std::vector<interesant*> out;
-    for(auto& queue : main_hall.queues)
-    {
+    for(auto& queue : main_hall)
         while(!queue.empty())
             out.push_back(queue.pop_front());
-    }
-    return out;
-}
 
-void print(int callno)
-{
-    std::cerr << callno << '\n';
-    for(size_t i = 0; i < main_hall.queues.size(); ++i)
-    {
-        std::cerr << i << " size: " << main_hall.queues[i].size() << ": { ";
-        main_hall.queues[i].reverse();
-        for(auto x : main_hall.queues[i])
-            std::cerr << (*x).num << ' ';
-        main_hall.queues[i].reverse();
-        std::cerr << " }\n";
-    }
-    std::cerr << "\n";
+    return out;
 }

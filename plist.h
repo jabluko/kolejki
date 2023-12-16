@@ -12,11 +12,6 @@ namespace plib
     template <class T>
     class list
     {
-    public:
-        template<typename type>
-        friend void swap(list<type>& l1, list<type>& l2);
-        
-
     private:
         struct node;
 
@@ -37,9 +32,8 @@ namespace plib
         using reverse_iterator = std::reverse_iterator<iterator>;
         using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
-        node *_before_first;
-        node *_past_last;
-        bool _direction;
+        template<class U>
+        friend void swap(list<U>& l1, list<U>& l2);
 
         list();
         list(const list&);
@@ -51,7 +45,6 @@ namespace plib
         list(const std::initializer_list<T>&);
 
         list& operator=(list);
-        //list &operator=(list &&);
         list& operator=(const std::initializer_list<T>&);
 
         size_t size() const;
@@ -121,7 +114,10 @@ namespace plib
          *
          * @param pos iterator before which to insert the list.
          * @param il std::initializer_list to be inserted.
-         * @return iterator to the first inserted element or pos if the provided list is empty.
+         * @return iterator to the firs
+        if(_before_first == nullptr)
+            return;
+        t inserted element or pos if the provided list is empty.
          */
         iterator insert(const const_iterator& pos, const std::initializer_list<value_type>& il);
 
@@ -151,14 +147,23 @@ namespace plib
          * @brief pushed the given argument to the front of the list using a specialized insert function.
          *
          * @tparam to_push type of element to push.
-        clear();
-        for (const auto &x : other)
-            push_back(x);
          * @param value argument to be pushed.
          * @return iterator to the inserted element.
          */
         template <class to_push>
         iterator push_front(const to_push& value);
+
+        /**
+         * @brief merges another list before the specified position.
+         *
+         * @param pos iterator before which to merge the other list.
+         * @param other list to be merged.
+         * @return iterator pointing to the first element,
+         *  which came from other in the merged list, or pos if other was empty
+         */
+        iterator merge(const const_iterator& pos, list& other);
+        iterator merge_back(list& other);
+        iterator merge_front(list& other);
 
         /**
          * @brief erases the element at the specified position.
@@ -176,43 +181,13 @@ namespace plib
          */
         iterator pull_out(const const_iterator& pos);
 
-        /**
-         * @brief merges another list before the specified position.
-         *
-         * @param pos iterator before which to merge the other list.
-         * @param other list to be merged.
-         * @return iterator pointing to the first element, which came from other in the merged list,
-         *  or pos if other was empty
-         */
-        iterator merge(const const_iterator& pos, list& other);
-
-        /**
-         * @brief merges another list before the specified position
-         *
-         * @param pos iterator before which to merge the other list.
-         * @param other list to be merged.
-         * @return iterator pointing to the first element, which came from other in the merged list,
-         *  or pos if other was empty
-         */
-        iterator merge(const const_iterator& pos, list&& other);
-
-        iterator merge_back(list& other);
-        iterator merge_back(list&& other);
-
-        iterator merge_front(list& other);
-        iterator merge_front(list&& other);
-
         value_type pop_back();
         value_type pop_front();
 
         void reverse();
         void clear();
 
-        iterator direct(const const_iterator&, const const_iterator&);
-
         ~list();
-
-
 
         class iterator
         {
@@ -253,6 +228,64 @@ namespace plib
             bool operator!=(const iterator &) const;
 
             ~iterator() = default;
+
+
+
+            friend bool has_next(const iterator& it)
+            { return it._current && it._current->_next[it._direction]; }
+
+            friend bool has_prev(const iterator& it)
+            { return it._current && it._current->_next[!it._direction]; }
+
+            friend iterator next(const iterator& it)
+            {
+                assert(has_next(it));
+                return  {
+                            it._current->_next[it._direction],
+                            it._current == it._current->_next[it._direction]->_next[0],
+                            it._const_linking
+                        };
+            }
+
+            friend iterator prev(const iterator& it)
+            {
+                assert(has_prev(it));
+                return  {
+                        it._current->_next[!it._direction],
+                        it._current == it._current->_next[!it._direction]->_next[1],
+                        it._const_linking
+                        };
+            }
+
+            /**
+             * @brief directs one iterator to face another
+             * 
+             * @param it iterator to be directed at dst
+             * @param dst 
+             * @return iterator pointing to it, but incrementing it will lead to dst
+             */
+            friend iterator direct
+                (const iterator &it, const iterator &dst)
+            {
+                iterator it1{it._current, 0, it._const_linking};
+                iterator it2{it._current, 1, it._const_linking};
+
+                while (has_next(it1) && it1 != dst && has_next(it2) && it2 != dst)
+                    ++it1, ++it2;
+                
+                while (has_next(it1) && it1 != dst)
+                    ++it1;
+
+                while (has_next(it2) && it2 != dst)
+                    ++it2;
+
+                if (it1 == dst)
+                    return {it._current, 0, it._const_linking};
+                if (it2 == dst)
+                    return {it._current, 1, it._const_linking};
+                else
+                    return {nullptr, 0, 1};
+            }
         };
 
         class const_iterator
@@ -261,8 +294,6 @@ namespace plib
             friend class list;
             node *_current;
             bool _direction;
-
-        public:
             bool _const_linking;
             const_iterator(node *const current, bool direction, bool const_linking);
 
@@ -272,7 +303,6 @@ namespace plib
             using value_type = const T;
 
             using reference = const T &;
-
             using pointer = const T *;
 
             const_iterator() = default;
@@ -294,8 +324,70 @@ namespace plib
             bool operator!=(const const_iterator &) const;
 
             ~const_iterator() = default;
+
+            friend bool has_next(const const_iterator& it)
+            { return it._current && it._current->_next[it._direction]; }
+
+            friend bool has_prev(const const_iterator& it)
+            { return it._current && it._current->_next[!it._direction]; }
+
+            friend const_iterator next(const const_iterator& it)
+            {
+                assert(has_next(it));
+                return  {
+                            it._current->_next[it._direction],
+                            it._current == it._current->_next[it._direction]->_next[0],
+                            it._const_linking
+                        };
+            }
+
+            friend const_iterator prev(const const_iterator& it)
+            {
+                assert(has_prev(it));
+                return  {
+                        it._current->_next[!it._direction],
+                        it._current == it._current->_next[!it._direction]->_next[1],
+                        it._const_linking
+                        };
+            }
+
+
+            /**
+             * @brief directs one const_iterator to face another
+             * 
+             * @param it const_iterator to be directed at dst
+             * @param dst 
+             * @return const_iterator pointing at start but incrementing wich will lead to dst
+             */
+            friend const_iterator direct
+                (const const_iterator &it, const const_iterator &dst)
+            {
+                const_iterator it1 = {it._current, 0, it._const_linking};
+                const_iterator it2 = {it._current, 1, it._const_linking};
+
+                while (has_next(it1) && it1 != dst && has_next(it2) && it2 != dst)
+                    ++it1, ++it2;
+                
+                while (has_next(it1) && it1 != dst)
+                    ++it1;
+
+                while (has_next(it2) && it2 != dst)
+                    ++it2;
+
+                if (it1 == dst)
+                    return {it._current, 0, it._const_linking};
+                if (it2 == dst)
+                    return {it._current, 1, it._const_linking};
+                else
+                    return {nullptr, 0, 1};
+            }
         };
+
     private:
+        node *_before_first;
+        node *_past_last;
+        bool _direction;
+
         iterator before_begin();
         const_iterator before_begin() const;
         const_iterator cbefore_begin();
@@ -328,9 +420,11 @@ namespace plib
         swap(l1._direction, l2._direction);
     }
 
+
     template <class T>
     template <typename... Args>
-    inline typename list<T>::node *list<T>::make_node(node *const previous, node *const next, Args &&...args)
+    inline typename list<T>::node *list<T>::make_node
+        (node *const previous, node *const next, Args &&...args)
     {
         return new node{
             T(args...),      //_value
@@ -352,6 +446,7 @@ namespace plib
         return b;
     }
 
+
     template <class T>
     inline list<T>::iterator::iterator(node *const current, bool direction, bool const_linking)
         : _current{current}, _direction{direction}, _const_linking{const_linking}
@@ -364,12 +459,7 @@ namespace plib
 
     template <class T>
     inline typename list<T>::iterator &list<T>::iterator::operator++()
-    {
-        return (*this) = {
-                   _current->_next[_direction],
-                   (_current->_next[_direction] && _current == _current->_next[_direction]->_next[0]),
-                   this->_const_linking};
-    }
+    { return (*this) = next(*this); }
 
     template <class T>
     inline typename list<T>::iterator list<T>::iterator::operator++(int)
@@ -381,12 +471,7 @@ namespace plib
 
     template <class T>
     inline typename list<T>::iterator &list<T>::iterator::operator--()
-    {
-        return (*this) = {
-                   _current->_next[!_direction],
-                   (_current->_next[!_direction] && _current == _current->_next[!_direction]->_next[1]),
-                   this->_const_linking};
-    }
+    { return (*this) = prev(*this); }
 
     template <class T>
     inline typename list<T>::iterator list<T>::iterator::operator--(int)
@@ -412,6 +497,7 @@ namespace plib
     inline bool list<T>::iterator::operator!=(const typename list<T>::iterator &other) const
     { return _current != other._current; }
 
+
     template <class T>
     inline list<T>::const_iterator::const_iterator(const iterator &other)
         : _current{other._current}, _direction{other._direction}, _const_linking{other._const_linking}
@@ -424,12 +510,7 @@ namespace plib
 
     template <class T>
     inline typename list<T>::const_iterator &list<T>::const_iterator::operator++()
-    {
-        return (*this) = {_current->_next[_direction],
-                          (_current->_next[_direction] &&
-                           _current == _current->_next[_direction]->_next[0]),
-                          this->_const_linking};
-    }
+    { return (*this) = next(*this); }
 
     template <class T>
     inline typename list<T>::const_iterator list<T>::const_iterator::operator++(int)
@@ -441,12 +522,7 @@ namespace plib
 
     template <class T>
     inline typename list<T>::const_iterator &list<T>::const_iterator::operator--()
-    {
-        return (*this) = {
-                   _current->_next[!_direction],
-                   (_current->_next[!_direction] && _current == _current->_next[!_direction]->_next[1]),
-                   this->_const_linking};
-    }
+    { return (*this) = prev(*this); }
 
     template <class T>
     inline typename list<T>::const_iterator list<T>::const_iterator::operator--(int)
@@ -465,12 +541,13 @@ namespace plib
     { return &(this->_current->_value); }
 
     template <class T>
-    inline bool list<T>::const_iterator::operator==(const typename list<T>::const_iterator &other) const
+    inline bool list<T>::const_iterator::operator==(const list<T>::const_iterator &other) const
     { return _current == other._current; }
 
     template <class T>
-    inline bool list<T>::const_iterator::operator!=(const typename list<T>::const_iterator &other) const
+    inline bool list<T>::const_iterator::operator!=(const list<T>::const_iterator &other) const
     { return _current != other._current; }
+
 
     template <class T>
     inline list<T>::list()
@@ -495,9 +572,8 @@ namespace plib
 
     template <class T>
     inline list<T>::list(list &&other)
-        : _before_first{other._before_first}, _past_last{other._past_last},
-          _direction{other._direction}
-    { other._before_first = nullptr, other._past_last = nullptr; }
+        :list()
+    { swap(*this, other); }
 
     template <class T>
     inline list<T>& list<T>::operator=(list<T> other)
@@ -505,13 +581,6 @@ namespace plib
         swap(*this, other);
         return *this;
     }
-
-    /*template <class T>
-    inline list<T>& list<T>::operator=(list<T>&& other)
-    {
-        std::swap(*this, other);
-        return *this;
-    }*/
 
     template <class T>
     inline list<T>& list<T>::operator=(const std::initializer_list<T>& il)
@@ -535,19 +604,19 @@ namespace plib
 
     template <class T>
     inline typename list<T>::iterator list<T>::begin()
-    { return std::next(before_begin()); }
+    { return next(before_begin()); }
 
     template <class T>
     inline typename list<T>::const_iterator list<T>::begin() const
-    { return std::next(before_begin()); }
+    { return next(before_begin()); }
 
     template <class T>
     inline typename list<T>::const_iterator list<T>::cbegin()
-    { return std::next(cbefore_begin()); }
+    { return next(cbefore_begin()); }
 
     template <class T>
     inline typename list<T>::const_iterator list<T>::cbegin() const
-    { return std::next(cbefore_begin()); }
+    { return next(cbefore_begin()); }
 
     template <class T>
     inline typename list<T>::reverse_iterator list<T>::rbegin()
@@ -607,11 +676,11 @@ namespace plib
 
     template <class T>
     inline typename list<T>::reference list<T>::back()
-    { return *(std::prev(end())); }
+    { return *(prev(end())); }
 
     template <class T>
     inline typename list<T>::const_reference list<T>::back() const
-    { return *(std::prev(cend())); }
+    { return *(prev(cend())); }
 
     template <class T>
     inline typename list<T>::size_type list<T>::size() const
@@ -623,31 +692,36 @@ namespace plib
 
     template <class T>
     template <typename... Args>
-    inline typename list<T>::iterator list<T>::emplace(const const_iterator &pos, Args &&...args)
+    inline typename list<T>::iterator list<T>::emplace
+        (const const_iterator &pos, Args &&...args)
     {
         list<T>::iterator new_node(make_node(nullptr, nullptr, args...), pos._direction, 0);
 
-        link(std::prev(pos), new_node);
+        link(prev(pos), new_node);
         link(new_node, pos);
 
         return new_node;
     }
 
     template <class T>
-    inline typename list<T>::iterator list<T>::insert(const typename list<T>::const_iterator &pos, const T &value)
+    inline typename list<T>::iterator list<T>::insert
+        (const list<T>::const_iterator &pos, const T &value)
     { return emplace(pos, value); }
 
     template <class T>
-    inline typename list<T>::iterator list<T>::insert(const typename list<T>::const_iterator &pos, const list<T> &other)
+    inline typename list<T>::iterator list<T>::insert
+        (const list<T>::const_iterator &pos, const list<T> &other)
     { return insert(pos, other.begin(), other.end()); }
 
     template <class T>
-    inline typename list<T>::iterator list<T>::insert(const const_iterator &pos, const std::initializer_list<value_type> &il)
+    inline typename list<T>::iterator list<T>::insert
+        (const const_iterator &pos, const std::initializer_list<value_type> &il)
     { return insert(pos, il.begin(), il.end()); }
 
     template <class T>
     template <typename _InputIt>
-    inline typename list<T>::iterator list<T>::insert(const const_iterator &pos, const _InputIt &first, const _InputIt &second)
+    inline typename list<T>::iterator list<T>::insert
+        (const const_iterator &pos, const _InputIt &first, const _InputIt &second)
     {
         const_iterator itl = pos;
         _InputIt input_it = first;
@@ -659,47 +733,23 @@ namespace plib
     }
 
     template <class T>
-    inline typename list<T>::iterator list<T>::merge(const const_iterator &pos, list &&other)
+    inline typename list<T>::iterator list<T>::merge
+        (const const_iterator &pos, list &other)
     {
-        auto copy = std::prev(pos);
+        auto copy = prev(pos);
         if (!other.empty())
         {
-            link(std::prev(pos), other.begin());
-            link(std::prev(other.end()), pos);
-
-            // link(other._before_first, other._past_last);
-        }
-
-        return std::next(copy);
-    }
-
-    template <class T>
-    inline typename list<T>::iterator list<T>::merge(const const_iterator &pos, list &other)
-    {
-        auto copy = std::prev(pos);
-        if (!other.empty())
-        {
-            link(std::prev(pos), other.begin());
-            link(std::prev(other.end()), pos);
+            link(prev(pos), other.begin());
+            link(prev(other.end()), pos);
             link(other.before_begin(), other.end());
         }
 
-        return std::next(copy);
-    }
-
-    template <class T>
-    inline typename list<T>::iterator list<T>::merge_back(list &&other)
-    {
-        return merge(cend(), other);
+        return next(copy);
     }
 
     template <class T>
     inline typename list<T>::iterator list<T>::merge_back(list &other)
     { return merge(cend(), other); }
-
-    template <class T>
-    inline typename list<T>::iterator list<T>::merge_front(list &&other)
-    { return merge(cbegin(), other); }
 
     template <class T>
     inline typename list<T>::iterator list<T>::merge_front(list &other)
@@ -708,8 +758,8 @@ namespace plib
     template <class T>
     inline typename list<T>::iterator list<T>::erase(const const_iterator &pos)
     {
-        auto copy = std::next(pos);
-        link(std::prev(pos), std::next(pos));
+        auto copy = next(pos);
+        link(prev(pos), next(pos));
         destroy_node(pos._current);
         return copy;
     }
@@ -717,7 +767,7 @@ namespace plib
     template <class T>
     inline typename list<T>::iterator list<T>::pull_out(const const_iterator &pos)
     {
-        auto copy = link(std::prev(pos), std::next(pos));
+        auto copy = link(prev(pos), next(pos));
         pos._current->_next[0] = nullptr;
         pos._current->_next[1] = nullptr;
         return copy;
@@ -747,7 +797,7 @@ namespace plib
     inline typename list<T>::value_type list<T>::pop_back()
     {
         auto copy = back();
-        erase(std::prev(cend()));
+        erase(prev(cend()));
         return copy;
     }
 
@@ -767,28 +817,8 @@ namespace plib
     }
 
     template <class T>
-    inline typename list<T>::iterator list<T>::direct(const const_iterator &it, const const_iterator &direction)
-    {
-        const_iterator it1 = {it._current, 0, it._const_linking};
-        const_iterator it2 = {it._current, 1, it._const_linking};
-
-        while (it1._current && it1 != direction && it2._current && it2 != direction)
-            ++it1, ++it2;
-
-        if (it1 == direction || !it2._current)
-            return {it._current, 0, it._const_linking};
-        if (it2 == direction || !it1._current)
-            return {it._current, 1, it._const_linking};
-
-        assert(false);
-    }
-
-    template <class T>
     inline list<T>::~list()
     {
-        if(_before_first == nullptr)
-            return;
-        
         clear();
         destroy_node(_before_first);
         destroy_node(_past_last);

@@ -223,8 +223,6 @@ int main()
         }
         debug("\n" << flush);
         
-        print(q);
-        
     
     }
     
