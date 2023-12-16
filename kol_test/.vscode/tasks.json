@@ -21,14 +21,14 @@
                 " -fsanitize=undefined " ,
                 " -fno-sanitize-recover " ,
                 " -fsanitize=address " ,
-                " -ggdb3 " ,
+                //" -ggdb3 " ,
                 " -fno-omit-frame-pointer " ,
-                " -O1 ",
+                " -O0 ",
                 "-fdiagnostics-color=always",
                 "kol.cpp",
                 "tester.cpp",
                 "-o",
-                "${fileDirname}/${fileBasenameNoExtension}"
+                "${fileDirname}/kol"
             ],
             "options": {
                 "cwd": "${fileDirname}"

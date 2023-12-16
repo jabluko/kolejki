@@ -60,7 +60,7 @@ void zmiana_okienka(interesant *i, int k)
 }
 
 void zamkniecie_okienka(int k1, int k2)
-{ main_hall.queues[k2].push_back(main_hall.queues[k1]); }
+{ main_hall.queues[k2].merge_back(main_hall.queues[k1]); }
 
 std::vector<interesant *> fast_track(interesant *i1, interesant *i2)
 {
@@ -96,7 +96,7 @@ std::vector<interesant *> zamkniecie_urzedu()
 void print(int callno)
 {
     std::cerr << callno << '\n';
-    for(int i = 0; i < main_hall.queues.size(); ++i)
+    for(size_t i = 0; i < main_hall.queues.size(); ++i)
     {
         std::cerr << i << " size: " << main_hall.queues[i].size() << ": { ";
         main_hall.queues[i].reverse();
