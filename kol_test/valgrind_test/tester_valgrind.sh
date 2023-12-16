@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if ! g++ @opcjeCpp btester.cpp kol.h kol.cpp -o bkol; then
+if ! g++ @opcjeCpp btester.cpp ../../kol.cpp -o bkol; then
     echo "Compilation error!"
     exit
 fi

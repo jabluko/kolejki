@@ -27,10 +27,9 @@
                 "-fdiagnostics-color=always",
                 "${workspaceFolder}/plist.h",
                 "${workspaceFolder}/kol.cpp",
-                "${workspaceFolder}/kol.h",
-                "${workspaceFolder}/main.cpp",
+                "${workspaceFolder}/test_list.cpp",
                 "-o",
-                "${fileDirname}/${fileBasenameNoExtension}"
+                "${fileDirname}/test_list"
             ],
             "options": {
                 "cwd": "${fileDirname}"

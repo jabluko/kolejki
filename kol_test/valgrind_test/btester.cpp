@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <iterator>
 #include <set>
-#include "kol.h"
+#include "../../kol.h"
 
 using namespace std;
 
@@ -42,7 +42,7 @@ int main()
     
     
     // Zakresy można modyfikować aby generować duże/małe testy.
-    int m = randint(1, 100);
+    int m = randint(1, 10);
     int q = randint(1, 1000);
     
     debug("m = " << m << "\n" << flush);
