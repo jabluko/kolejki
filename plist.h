@@ -9,6 +9,11 @@
 
 namespace plib
 {
+    /**
+     * @class list
+     * @brief Doubly linked list implementation.
+     * @tparam T Type of elements stored in the list.
+     */
     template <class T>
     class list
     {
@@ -39,15 +44,39 @@ namespace plib
         list(const list&);
         list(list&&);
 
+        /**
+         * @brief iange constructor. Creates a list from the elements in the range [bgn, end).
+         * @tparam inputIt iterator type for the input range.
+         * @param bgn beginning of the range.
+         * @param end bnd of the range.
+         * 
+         * Time complexity O(std::distance(bgn, end))
+         */
         template <typename inputIt>
-        list(const inputIt&, const inputIt&);
+        list(const inputIt& bgn, const inputIt& end);
 
         list(const std::initializer_list<T>&);
 
         list& operator=(list);
         list& operator=(const std::initializer_list<T>&);
 
-        size_t size() const;
+        /**
+         * @brief calculates the size
+         * 
+         * @return size_type number of elements
+         * 
+         * Time complexity O(size())
+         */
+        size_type size() const;
+        
+        /**
+         * @brief checks if the container is empty
+         * 
+         * @return true if it is empty
+         * @return false if it is not empty
+         * 
+         * Time complexity O(1)
+         */
         bool empty() const;
 
         iterator begin();
@@ -83,6 +112,8 @@ namespace plib
          * @param pos iterator before which to insert the element.
          * @param args list of arguments for the constructor.
          * @return iterator to the inserted element.
+         * 
+         * Time complexity O(1)
          */
         template <typename... Args>
         iterator emplace(const const_iterator &pos, Args&&... args);
@@ -97,6 +128,8 @@ namespace plib
          * @param pos iterator before which to insert the element.
          * @param value to be inserted.
          * @return iterator to the inserted element.
+         * 
+         * Time complexity O(1)
          */
         iterator insert(const const_iterator& pos, const T& value);
 
@@ -106,6 +139,8 @@ namespace plib
          * @param pos iterator before which to insert the list.
          * @param l list to be inserted.
          * @return iterator to the last inserted element or pos if the provided list is empty.
+         * 
+         * Time complexity O(l.size())
          */
         iterator insert(const const_iterator& pos, const list& l);
 
@@ -114,10 +149,9 @@ namespace plib
          *
          * @param pos iterator before which to insert the list.
          * @param il std::initializer_list to be inserted.
-         * @return iterator to the firs
-        if(_before_first == nullptr)
-            return;
-        t inserted element or pos if the provided list is empty.
+         * @return iterator to the first inserted element or pos if the provided list is empty.
+         * 
+         * Time complexity O(il.size())
          */
         iterator insert(const const_iterator& pos, const std::initializer_list<value_type>& il);
 
@@ -129,9 +163,11 @@ namespace plib
          * @param first begin iterator of the input range.
          * @param second end iterator of the input range.
          * @return iterator to the last inserted element or pos if the provided range is empty.
+         * 
+         * Time complexity O(std::distance(bgn, end))
          */
         template <typename _InputIt>
-        iterator insert(const const_iterator& pos, const _InputIt& first, const _InputIt& second);
+        iterator insert(const const_iterator& pos, const _InputIt& bgn, const _InputIt& end);
 
         /**
          * @brief pushed the given argument to the back of the list using a specialized insert function.
@@ -139,6 +175,8 @@ namespace plib
          * @tparam to_push type of element to push.
          * @param value argument to be pushed.
          * @return iterator to the inserted element.
+         * 
+         * Time complexity O(1)
          */
         template <class to_push>
         iterator push_back(const to_push& value);
@@ -149,6 +187,8 @@ namespace plib
          * @tparam to_push type of element to push.
          * @param value argument to be pushed.
          * @return iterator to the inserted element.
+         * 
+         * Time complexity O(1)
          */
         template <class to_push>
         iterator push_front(const to_push& value);
@@ -160,6 +200,8 @@ namespace plib
          * @param other list to be merged.
          * @return iterator pointing to the first element,
          *  which came from other in the merged list, or pos if other was empty
+         * 
+         * Time complexity O(1)
          */
         iterator merge(const const_iterator& pos, list& other);
         iterator merge_back(list& other);
@@ -170,6 +212,8 @@ namespace plib
          *
          * @param pos iterator pointing to the element to be erased.
          * @return iterator pointing to the element following the erased element.
+         * 
+         * Time complexity O(1)
          */
         iterator erase(const const_iterator& pos);
 
@@ -178,13 +222,26 @@ namespace plib
          *
          * @param pos iterator pointing to the element to be removed.
          * @return value of the removed element.
+         * 
+         * Time complexity O(1)
          */
         iterator pull_out(const const_iterator& pos);
 
         value_type pop_back();
         value_type pop_front();
 
+        /**
+         * @brief reverses the list
+         * 
+         * Time complexity O(1)
+         */
         void reverse();
+
+        /**
+         * @brief erases every element from the list
+         * 
+         * Time complexity O(size())
+         */
         void clear();
 
         ~list();
@@ -230,9 +287,9 @@ namespace plib
             {
                 assert(has_next(it));
                 return  {
-                            it._current->_next[it._direction],
-                            it._current == it._current->_next[it._direction]->_next[0],
-                            it._const_linking
+                            it._current->_next[it._direction],                         //_current
+                            it._current == it._current->_next[it._direction]->_next[0],//_direction  
+                            it._const_linking                                          //_const_linking
                         };
             }
 
@@ -240,9 +297,9 @@ namespace plib
             {
                 assert(has_prev(it));
                 return  {
-                        it._current->_next[!it._direction],
-                        it._current == it._current->_next[!it._direction]->_next[1],
-                        it._const_linking
+                        it._current->_next[!it._direction],                         //_current
+                        it._current == it._current->_next[!it._direction]->_next[1],//_direction
+                        it._const_linking                                           //_const_linking
                         };
             }
 
@@ -252,6 +309,8 @@ namespace plib
              * @param it iterator to be directed at dst
              * @param dst 
              * @return iterator pointing to it, but incrementing it will lead to dst
+             * 
+             * Time complexity O(std::distance(it, dst)))
              */
             friend iterator direct
                 (const iterator &it, const iterator &dst)
