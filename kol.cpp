@@ -1,7 +1,19 @@
+/**
+ * @file kol.cpp
+ * @author cs.pawelmieszkowski@gmail.com
+ * @brief implementation of a hypothetical city_hall
+ * @version 0.1
+ * @date 2023-12-17
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
+
 #include "plist.h"
 #include "kol.h"
 #include <vector>
 #include <iostream>
+
 
 struct interesant
 { 

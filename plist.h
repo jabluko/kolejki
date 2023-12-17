@@ -1,5 +1,16 @@
 #pragma once
 
+/**
+ * @file plist.h
+ * @author cs.pawelmieszkowski@gmail.com
+ * @brief linked list implementation
+ * @version 0.1
+ * @date 2023-12-17
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
+
 #include <cstddef>
 #include <memory>
 #include <initializer_list>
@@ -7,12 +18,16 @@
 #include <cassert>
 #include <iostream>
 
+/**
+ * @namespace plib
+ * @brief namespace for my library
+ */
 namespace plib
 {
     /**
      * @class list
-     * @brief Doubly linked list implementation.
-     * @tparam T Type of elements stored in the list.
+     * @brief doubly linked list implementation.
+     * @tparam T type of elements stored in the list.
      */
     template <class T>
     class list
@@ -367,6 +382,11 @@ namespace plib
         const_iterator cbefore_begin();
         const_iterator cbefore_begin() const;
 
+        /**
+         * @struct node
+         * 
+         * @brief holds a single node of the list
+         */
         struct node
         {
         private:
@@ -374,6 +394,7 @@ namespace plib
             friend class iterator;
 
         public:
+            
             T _value;
             node *_next[2];
         };
@@ -381,8 +402,15 @@ namespace plib
         node *make_node(node *const previous = nullptr, node *const next = nullptr, Args &&...args);
         void destroy_node(node *to_delete);
 
+        /**
+         * @brief helper function links nodes of two iterators together
+         * 
+         * @tparam it1_t, it2_t should be plib::list::const_iterator or plib::list::iterator
+         * @tparam it1_t class of the first iterator
+         * @tparam it2_t class of the second iterator
+         */
         template <typename it1_t, typename it2_t>
-        const it2_t &link(const it1_t &, const it2_t &);
+        void link(const it1_t &, const it2_t &);
     };
 
     template <class T>
@@ -412,12 +440,11 @@ namespace plib
 
     template <class T>
     template <typename it1_t, typename it2_t>
-    inline const it2_t &list<T>::link(const it1_t &a, const it2_t &b)
+    inline void list<T>::link(const it1_t &a, const it2_t &b)
     {
         assert(a._const_linking == 0 && b._const_linking == 0);
         a._current->_next[a._direction] = b._current;
         b._current->_next[!b._direction] = a._current;
-        return b;
     }
 
 
