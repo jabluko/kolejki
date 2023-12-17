@@ -495,19 +495,19 @@ namespace plib
 
     template <class T>
     inline typename list<T>::reverse_iterator list<T>::rbegin()
-    { return typename list<T>::reverse_iterator(end()); }
+    { return end(); }
 
     template <class T>
     inline typename list<T>::const_reverse_iterator list<T>::rbegin() const
-    { return typename list<T>::const_reverse_iterator(end()); }
+    { return end(); }
 
     template <class T>
     inline typename list<T>::const_reverse_iterator list<T>::crbegin()
-    { return typename list<T>::const_reverse_iterator(cend()); }
+    { return cend(); }
 
     template <class T>
     inline typename list<T>::const_reverse_iterator list<T>::crbegin() const
-    { return typename list<T>::const_reverse_iterator(cend()); }
+    { return cend(); }
 
     template <class T>
     inline typename list<T>::iterator list<T>::end()
