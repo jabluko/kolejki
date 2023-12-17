@@ -210,13 +210,6 @@ namespace plib
             using pointer = T *;
             using const_pointer = const T *;
 
-            iterator() = default;
-            iterator(const iterator &) = default;
-            iterator(iterator &&) = default;
-
-            iterator &operator=(const iterator &) = default;
-            iterator &operator=(iterator &&) = default;
-
             iterator &operator++();
             iterator operator++(int);
             iterator &operator--();
@@ -226,10 +219,6 @@ namespace plib
 
             bool operator==(const iterator &) const;
             bool operator!=(const iterator &) const;
-
-            ~iterator() = default;
-
-
 
             friend bool has_next(const iterator& it)
             { return it._current && it._current->_next[it._direction]; }
@@ -288,16 +277,14 @@ namespace plib
             }
         };
 
-        class const_iterator
+        class const_iterator: public iterator
         {
         protected:
             friend class list;
-            node *_current;
-            bool _direction;
-            bool _const_linking;
-            const_iterator(node *const current, bool direction, bool const_linking);
 
         public:
+            using iterator::iterator;
+
             using iterator_category = std::bidirectional_iterator_tag;
             using difference_type = ptrdiff_t;
             using value_type = const T;
@@ -305,82 +292,10 @@ namespace plib
             using reference = const T &;
             using pointer = const T *;
 
-            const_iterator() = default;
-            const_iterator(const const_iterator &) = default;
-            const_iterator(const_iterator &&) = default;
-            const_iterator(const iterator &);
+            const_iterator(const iterator&);
 
-            const_iterator &operator=(const const_iterator &) = default;
-            const_iterator &operator=(const_iterator &&) = default;
-
-            const_iterator &operator++();
-            const_iterator operator++(int);
-            const_iterator &operator--();
-            const_iterator operator--(int);
             reference operator*() const;
             pointer operator->() const;
-
-            bool operator==(const const_iterator &) const;
-            bool operator!=(const const_iterator &) const;
-
-            ~const_iterator() = default;
-
-            friend bool has_next(const const_iterator& it)
-            { return it._current && it._current->_next[it._direction]; }
-
-            friend bool has_prev(const const_iterator& it)
-            { return it._current && it._current->_next[!it._direction]; }
-
-            friend const_iterator next(const const_iterator& it)
-            {
-                assert(has_next(it));
-                return  {
-                            it._current->_next[it._direction],
-                            it._current == it._current->_next[it._direction]->_next[0],
-                            it._const_linking
-                        };
-            }
-
-            friend const_iterator prev(const const_iterator& it)
-            {
-                assert(has_prev(it));
-                return  {
-                        it._current->_next[!it._direction],
-                        it._current == it._current->_next[!it._direction]->_next[1],
-                        it._const_linking
-                        };
-            }
-
-
-            /**
-             * @brief directs one const_iterator to face another
-             * 
-             * @param it const_iterator to be directed at dst
-             * @param dst 
-             * @return const_iterator pointing at start but incrementing wich will lead to dst
-             */
-            friend const_iterator direct
-                (const const_iterator &it, const const_iterator &dst)
-            {
-                const_iterator it1 = {it._current, 0, it._const_linking};
-                const_iterator it2 = {it._current, 1, it._const_linking};
-
-                while (has_next(it1) && it1 != dst && has_next(it2) && it2 != dst)
-                    ++it1, ++it2;
-                
-                while (has_next(it1) && it1 != dst)
-                    ++it1;
-
-                while (has_next(it2) && it2 != dst)
-                    ++it2;
-
-                if (it1 == dst)
-                    return {it._current, 0, it._const_linking};
-                if (it2 == dst)
-                    return {it._current, 1, it._const_linking};
-                else
-                    return {nullptr, 0, 1};
-            }
         };
 
     private:
@@ -500,37 +415,8 @@ namespace plib
 
     template <class T>
     inline list<T>::const_iterator::const_iterator(const iterator &other)
-        : _current{other._current}, _direction{other._direction}, _const_linking{other._const_linking}
+        : iterator(other)
     { }
-
-    template <class T>
-    inline list<T>::const_iterator::const_iterator(node *const current, bool direction, bool const_linking)
-        : _current{current}, _direction{direction}, _const_linking{const_linking}
-    { }
-
-    template <class T>
-    inline typename list<T>::const_iterator &list<T>::const_iterator::operator++()
-    { return (*this) = next(*this); }
-
-    template <class T>
-    inline typename list<T>::const_iterator list<T>::const_iterator::operator++(int)
-    {
-        auto copy = *this;
-        ++(*this);
-        return copy;
-    }
-
-    template <class T>
-    inline typename list<T>::const_iterator &list<T>::const_iterator::operator--()
-    { return (*this) = prev(*this); }
-
-    template <class T>
-    inline typename list<T>::const_iterator list<T>::const_iterator::operator--(int)
-    {
-        auto copy = *this;
-        --(*this);
-        return copy;
-    }
 
     template <class T>
     inline typename list<T>::const_iterator::reference list<T>::const_iterator::operator*() const
@@ -539,14 +425,6 @@ namespace plib
     template <class T>
     inline typename list<T>::const_iterator::pointer list<T>::const_iterator::operator->() const
     { return &(this->_current->_value); }
-
-    template <class T>
-    inline bool list<T>::const_iterator::operator==(const list<T>::const_iterator &other) const
-    { return _current == other._current; }
-
-    template <class T>
-    inline bool list<T>::const_iterator::operator!=(const list<T>::const_iterator &other) const
-    { return _current != other._current; }
 
 
     template <class T>
@@ -577,10 +455,7 @@ namespace plib
 
     template <class T>
     inline list<T>& list<T>::operator=(list<T> other)
-    {
-        swap(*this, other);
-        return *this;
-    }
+    { swap(*this, other); return *this; }
 
     template <class T>
     inline list<T>& list<T>::operator=(const std::initializer_list<T>& il)

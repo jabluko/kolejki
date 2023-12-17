@@ -20,7 +20,7 @@ struct city_hall: public std::vector<plib::list<interesant*>>
 static thread_local city_hall main_hall;
 
 void otwarcie_urzedu(int m)
-{ main_hall = city_hall(m); }
+{ main_hall.resize(m); }
 
 interesant *nowy_interesant(int k)
 {

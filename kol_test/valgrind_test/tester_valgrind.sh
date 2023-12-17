@@ -7,11 +7,11 @@ fi
 
 wrong_test=-1
 
-for((i = 28;i < 29; i++)) {
+for((i = 0;i < 30; i++)) {
     echo "-------------------Test number $i-------------------"
     
     
-    if ! valgrind --tool=memcheck --leak-check=yes ./bkol <<< $i; then
+    if ! valgrind --track-origins=yes --tool=memcheck --leak-check=yes ./bkol <<< $i; then
         wrong_test=$i
         break
     else
