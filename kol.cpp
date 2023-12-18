@@ -17,16 +17,19 @@
 
 struct interesant
 { 
-    size_t num;
+    int num;
     plib::list<interesant*>::const_iterator it;
 };
 
+/**
+ * @struct city_hall
+ * @brief represent a city hall with queues and a machine giving numbers
+ * 
+ */
 struct city_hall: public std::vector<plib::list<interesant*>>
 {
     using std::vector<plib::list<interesant*>>::vector;
-    using size_type = std::size_t;
-
-    size_type counter;
+    int counter;
 };
 
 static thread_local city_hall main_hall;
@@ -43,7 +46,7 @@ interesant *nowy_interesant(int k)
 }
 
 int numerek(interesant *i)
-{ return static_cast<int>((*i).num); }
+{ return i->num; }
 
 interesant *obsluz(int k)
 {
@@ -56,7 +59,7 @@ interesant *obsluz(int k)
 void zmiana_okienka(interesant *i, int k)
 {
     plib::list<interesant*>().erase(i->it);
-    i->it = main_hall[k].emplace_back(i);
+    i->it = main_hall[k].push_back(i);
 }
 
 void zamkniecie_okienka(int k1, int k2)
