@@ -265,9 +265,9 @@ namespace plib
         {
         protected:
             friend class list;
-            node *_current;
-            bool _direction;
-            bool _const_linking;
+            node *_current;     // node in the list currently pointing to
+            bool _direction;    // temporal direction
+            bool _const_linking;// true if it is forbiden to insert or erase through this iterator
             iterator(node *const currnet, bool direction, bool const_linking);
             iterator(const const_iterator &other);
 
@@ -353,9 +353,6 @@ namespace plib
 
         class const_iterator: public iterator
         {
-        protected:
-            friend class list;
-
         public:
             using iterator::iterator;
 
@@ -373,9 +370,9 @@ namespace plib
         };
 
     private:
-        node *_before_first;
-        node *_past_last;
-        bool _direction;
+        node *_before_first; // guardian of begin
+        node *_past_last;    // guardian of end
+        bool direction() const;
 
         iterator before_begin();
         const_iterator before_begin() const;
@@ -389,14 +386,8 @@ namespace plib
          */
         struct node
         {
-        private:
-            friend class list;
-            friend class iterator;
-
-        public:
-            
-            T _value;
-            node *_next[2];
+            value_type _value; // value_type stored in this node
+            node *_next[2];    // neighbors in the list in arbitrary order
         };
         template <typename... Args>
         node *make_node(node *const previous = nullptr, node *const next = nullptr, Args &&...args);
@@ -420,6 +411,12 @@ namespace plib
         swap(l1._before_first, l2._before_first);
         swap(l1._past_last, l2._past_last);
         swap(l1._direction, l2._direction);
+    }
+
+    template <class T>
+    inline bool list<T>::direction() const
+    {
+        return _before_first->_next[1];
     }
 
 
@@ -515,7 +512,7 @@ namespace plib
 
     template <class T>
     inline list<T>::list()
-        : _before_first(make_node()), _past_last(make_node()), _direction(1)
+        : _before_first(make_node()), _past_last(make_node())
     { link(before_begin(), end()); }
 
     template <class T>
@@ -549,11 +546,11 @@ namespace plib
 
     template <class T>
     inline typename list<T>::iterator list<T>::before_begin()
-    { return {_before_first, _direction, 0}; }
+    { return {_before_first, direction(), 0}; }
 
     template <class T>
     inline typename list<T>::const_iterator list<T>::before_begin() const
-    { return {_before_first, _direction, 1}; }
+    { return {_before_first, direction(), 1}; }
 
     template <class T>
     inline typename list<T>::const_iterator list<T>::cbefore_begin()
@@ -597,11 +594,11 @@ namespace plib
 
     template <class T>
     inline typename list<T>::iterator list<T>::end()
-    { return {_past_last, _direction, 0}; }
+    { return {_past_last, direction(), 0}; }
 
     template <class T>
     inline typename list<T>::const_iterator list<T>::end() const
-    { return {_past_last, _direction, 1}; }
+    { return {_past_last, direction(), 1}; }
 
     template <class T>
     inline typename list<T>::const_iterator list<T>::cend()
@@ -772,10 +769,7 @@ namespace plib
 
     template <class T>
     inline void list<T>::reverse()
-    {
-        _direction ^= 1;
-        std::swap(_before_first, _past_last);
-    }
+    { std::swap(_before_first, _past_last); }
 
     template <class T>
     inline list<T>::~list()
