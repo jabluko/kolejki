@@ -16,7 +16,6 @@
 #include <initializer_list>
 #include <iterator>
 #include <cassert>
-#include <iostream>
 
 /**
  * @namespace plib
@@ -694,6 +693,8 @@ namespace plib
     inline typename list<T>::iterator list<T>::merge
         (const const_iterator &pos, list &other)
     {
+        if(std::addressof(other) == this)
+            return pos;
         auto copy = prev(pos);
         if (!other.empty())
         {
