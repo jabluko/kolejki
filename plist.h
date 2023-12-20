@@ -334,19 +334,18 @@ namespace plib
 
                 while (has_next(it1) && it1 != dst && has_next(it2) && it2 != dst)
                     ++it1, ++it2;
-                
-                while (has_next(it1) && it1 != dst)
-                    ++it1;
-
-                while (has_next(it2) && it2 != dst)
-                    ++it2;
 
                 if (it1 == dst)
                     return {it._current, 0, it._const_linking};
                 if (it2 == dst)
                     return {it._current, 1, it._const_linking};
-                else
-                    return {nullptr, 0, 1};
+
+                if (has_next(it1))
+                    return {it._current, 0, it._const_linking};
+                if (has_next(it2))
+                    return {it._current, 1, it._const_linking};
+                
+                return {nullptr, 0, 1};
             }
         };
 
